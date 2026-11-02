@@ -111,8 +111,9 @@ GitHub に push すると `.github/workflows/build.yml` がテストを走らせ
 2. 通信を変えたときは、古い版と遊べるかで決める。
    - メッセージや項目を**足すだけ**なら `AppVersion.protocol` は上げず、`AppVersion.features` に名前を足して、相手が対応しているときだけ使う。
    - 古い版と**通信できなくなる**変更なら `AppVersion.protocol` を 1 上げる（古い版とは「版がちがう」と表示され、参加できなくなる）。
-3. 保存データの形を変えたときは `AppSettings.dataVersion` を上げ、`_migrate` に古い形からの読み替えを足す。
-4. コミットして、`git tag v1.2.0 && git push origin v1.2.0`。CI がテストとビルドのあと、タグと `pubspec.yaml` の版が同じかを確かめ、GitHub Releases に `PONG-windows-x64.zip` と `PONG-macos-universal.dmg` を置きます。アプリのお知らせはこの Releases の最新版を見ます。
+3. `CHANGELOG.md` の先頭に「## 1.2.0（日付）」の章を足し、変更を利用者向けの言葉で書く（Releases のパッチノートになります。章がないと配布は止まります）。
+4. 保存データの形を変えたときは `AppSettings.dataVersion` を上げ、`_migrate` に古い形からの読み替えを足す。
+5. コミットして、`git tag v1.2.0 && git push origin v1.2.0`。CI がテストとビルドのあと、タグと `pubspec.yaml` の版が同じかを確かめ、GitHub Releases に `PONG-windows-x64.zip` と `PONG-macos-universal.dmg` を置きます。アプリのお知らせはこの Releases の最新版を見ます。
 
 ## しくみ
 

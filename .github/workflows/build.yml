@@ -87,9 +87,14 @@ jobs:
         with:
           pattern: release-*
           merge-multiple: true
+      - name: パッチノート（CHANGELOG.md のこの版の章）を取り出す
+        run: |
+          ver="${GITHUB_REF_NAME#v}"
+          awk -v v="## $ver" 'index($0, v)==1 {on=1; next} /^## / {on=0} on' CHANGELOG.md > notes.md
+          test -s notes.md || { echo "CHANGELOG.md に「## $ver」の章がありません"; exit 1; }
       - uses: softprops/action-gh-release@v2
         with:
           files: |
             PONG-windows-x64.zip
             PONG-macos-universal.dmg
-          generate_release_notes: true
+          body_path: notes.md
