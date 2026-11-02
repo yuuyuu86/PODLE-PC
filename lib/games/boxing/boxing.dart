@@ -72,6 +72,9 @@ class BoxingRules extends SportRules {
   static const tStagger = 0.32;
   static const tBlocked = 0.3;
 
+  /// 拳の先で当てるとジャスト、近すぎると弱い。[gap] は相手の体の表面までの距離
+  static Timing timing(double gap) => gap >= reach - 26 ? Timing.just : (gap < 66 ? Timing.close : Timing.normal);
+
   @override
   int? get winScore => null;
   @override
@@ -174,11 +177,14 @@ class BoxingRules extends SportRules {
         continue;
       }
       final counter = o.state == BoxerState.windup;
+      final t = timing((o.x - b.x).abs() - bodyHalf);
+      final base = counter ? counterDamage : damage;
+      final dmg = switch (t) { Timing.just => base * 1.4, Timing.close => base * 0.6, _ => base };
       o
-        ..hp = math.max(0, o.hp - (counter ? counterDamage : damage))
+        ..hp = math.max(0, o.hp - dmg)
         ..state = BoxerState.stagger
         ..timer = tStagger;
-      events.add(GameEvent(counter ? 'counter' : 'punch', side: i, x: ax, y: ay));
+      events.add(GameEvent(counter ? 'counter' : 'punch', side: i, x: ax, y: ay, q: t.wire));
       score[i]++; // 有効打
       if (o.hp <= 0) return EndResult(i, 'KO');
     }

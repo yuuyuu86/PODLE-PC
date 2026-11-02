@@ -77,7 +77,7 @@ void main() {
     model.sessionRoom(info);
     await shot('03-room');
     for (final (i, game) in GameKind.values.indexed) {
-      final e = MatchEngine(game, firstServer: 0);
+      final e = MatchEngine(game, firstServer: 0)..state.stage = i;
       info = RoomInfo(code: 'KQTE', game: game, phase: RoomPhase.match, you: 0, players: [
         info.players[0],
         const PlayerInfo(present: true, name: 'はなこ', avatar: '2.1.4.0', connected: true),
@@ -116,12 +116,16 @@ void main() {
       const PlayerInfo(present: true, name: 'はなこ', avatar: '2.1.4.0', connected: true),
     ]);
     model.sessionRoom(info);
-    final intro = MatchEngine(GameKind.volley)..step(const [PlayerInput.none, PlayerInput.none], 1 / 60);
+    final intro = MatchEngine(GameKind.volley)
+      ..state.stage = 4
+      ..step(const [PlayerInput.none, PlayerInput.none], 1 / 60);
     model.sessionState(intro.state);
     await shot('19-intro');
     // 半分表示の右の選手: 開始前の案内はコートの外側に出る
     model.sessionRoom(RoomInfo(code: 'KQTE', game: GameKind.volley, phase: RoomPhase.match, you: 1, players: info.players));
-    model.sessionState((MatchEngine(GameKind.volley)..step(const [PlayerInput.none, PlayerInput.none], 1 / 60)).state);
+    model.sessionState((MatchEngine(GameKind.volley)
+          ..state.stage = 5
+          ..step(const [PlayerInput.none, PlayerInput.none], 1 / 60)).state);
     await shot('19-intro-split-right');
     model.sessionRoom(info);
     final over = MatchEngine(GameKind.volley, firstServer: 0);
@@ -138,8 +142,6 @@ void main() {
     await shot('20-result');
     model.go(Screen.settings);
     await shot('21-settings');
-    model.go(Screen.profile);
-    await shot('22-profile');
     for (final (i, won) in [true, false, true].indexed) {
       settings.addRecord(MatchRecord(at: DateTime(2026, 10, 30, 12, i), game: GameKind.values[i], rule: GameKind.values[i].defaultRule, opponent: 'はなこ', opponentAvatar: '2.1.4.0', myScore: won ? 5 : 2, opponentScore: won ? 3 : 5, won: won));
     }

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'catalog.dart';
 import '../boxing/boxing.dart';
 import 'common.dart';
+import 'stage.dart';
 
 /// 競技に依存しない試合進行: 開始前の操作説明 → プレー → 得点演出 → 終了。
 /// 試合の状態は部屋を作ったPC（ホスト）だけが進め、相手には MatchState をそのまま送る。
@@ -39,6 +40,7 @@ class MatchState {
     this.winner,
     this.endReason,
     List<GameEvent>? events,
+    this.stage = 0,
   })  : score = score ?? [0, 0],
         events = events ?? [];
 
@@ -54,6 +56,9 @@ class MatchState {
   LastPoint? lastPoint;
   int? winner;
   String? endReason;
+
+  /// 背景の飾り（[Stage] の番号）。試合ごとにランダム
+  int stage;
 
   /// このフレームで起きたこと（効果音・演出用）
   List<GameEvent> events;
@@ -72,6 +77,7 @@ class MatchState {
         'er': endReason,
         'w': world.toJson(),
         'ev': [for (final e in events) e.toJson()],
+        'stg': stage,
       };
 
   static MatchState fromJson(Map<String, Object?> m) {
@@ -90,6 +96,7 @@ class MatchState {
       winner: (m['win'] as num?)?.toInt(),
       endReason: m['er'] as String?,
       events: [for (final e in m['ev'] as List) GameEvent.fromJson((e as Map).cast<String, Object?>())],
+      stage: (m['stg'] as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -99,7 +106,7 @@ class MatchEngine {
   MatchEngine(this.game, {int? firstServer, math.Random? random, int? rule})
       : rules = game.rules,
         winScore = game == GameKind.boxing ? game.rules.winScore : (rule ?? game.rules.winScore),
-        state = MatchState(game: game, world: game.rules.makeWorld()) {
+        state = MatchState(game: game, world: game.rules.makeWorld(), stage: (random ?? math.Random()).nextInt(Stage.values.length)) {
     final w = state.world;
     if (rule != null && w is BoxingWorld) w.clock = rule.toDouble();
     final server = rules.serveRule == ServeRule.none ? null : (firstServer ?? (random ?? math.Random()).nextInt(2));

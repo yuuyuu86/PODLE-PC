@@ -232,18 +232,51 @@ abstract final class Figure {
 
 /// 打った瞬間などの短い衝撃線
 class Burst {
-  const Burst(this.x, this.y, this.born, {this.big = false});
+  const Burst(this.x, this.y, this.born, {this.big = false, this.timing = Timing.normal});
 
   final double x;
   final double y;
   final double born;
   final bool big;
+  final Timing timing;
   static const life = 0.35;
 
+  /// 文字（JUST! / はやい など）は少し長く残す
+  static const labelLife = 0.7;
+
   void draw(Canvas c, double now) {
-    final k = (now - born) / life;
-    if (k < 0 || k >= 1) return;
-    final size = big ? 34.0 : 22.0;
+    final age = now - born;
+    if (age < 0) return;
+    if (timing != Timing.normal && age < labelLife) {
+      final f = age / labelLife;
+      final alpha = f < 0.6 ? 1.0 : 1 - (f - 0.6) / 0.4;
+      final rise = 26 + f * 34;
+      if (timing == Timing.just) {
+        // ジャスト: 大きな文字と、ふくらむ二重の輪
+        final pop = f < 0.15 ? 0.7 + f / 0.15 * 0.5 : 1.2 - math.min(f, 0.4) * 0.5;
+        drawText(c, timing.label, Offset(x, y - rise), size: 30 * pop, color: Palette.ink.withValues(alpha: alpha));
+        if (age < life) {
+          final k = age / life;
+          final pen = Sketch.pen(3, color: Palette.ink.withValues(alpha: 1 - k));
+          c.drawPath(Sketch.circle(Offset(x, y), 20 + k * 46, seed: 4, wobble: 0.05), pen);
+          c.drawPath(Sketch.circle(Offset(x, y), 10 + k * 30, seed: 5, wobble: 0.05), pen);
+        }
+      } else {
+        drawText(c, timing.label, Offset(x, y - rise * 0.7), size: 19, color: Palette.pencil.withValues(alpha: alpha));
+      }
+    }
+    final k = age / life;
+    if (k >= 1) return;
+    if (timing.weak) {
+      // 弱い当たり: 小さく、うすい線を少しだけ
+      final pen = Sketch.pen(1.6, color: Palette.pencil.withValues(alpha: 1 - k));
+      for (var i = 0; i < 4; i++) {
+        final a = i / 4 * math.pi * 2 + 0.6;
+        c.drawPath(Sketch.line(Offset(x + math.cos(a) * 8, y + math.sin(a) * 8), Offset(x + math.cos(a) * (14 + k * 6), y + math.sin(a) * (14 + k * 6)), seed: i, wobble: 0.6), pen);
+      }
+      return;
+    }
+    final size = (big ? 34.0 : 22.0) * (timing == Timing.just ? 1.4 : 1);
     final pen = Sketch.pen(2.2, color: Palette.ink.withValues(alpha: 1 - k));
     for (var i = 0; i < 7; i++) {
       final a = i / 7 * math.pi * 2 + 0.3;

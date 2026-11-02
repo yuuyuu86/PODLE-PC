@@ -163,15 +163,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 }
 
-/// プレイヤーの名前と見た目を変える画面。変更はその場で保存する（スマホ版 ProfileScreen）。
-class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+/// 設定画面の「なまえ」欄。正しい名前になったらその場で保存する。
+class NameSetting extends StatefulWidget {
+  const NameSetting({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  State<NameSetting> createState() => _NameSettingState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _NameSettingState extends State<NameSetting> {
   late final AppSettings settings = Services.of(context).settings;
   late final _name = TextEditingController(text: settings.playerName);
 
@@ -184,42 +184,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final problem = AppSettings.validateName(_name.text);
-    return DoodleScaffold(
-      title: 'プレイヤー',
-      onBack: () => Services.of(context).model.go(Screen.home),
-      child: PageBody(
-        maxWidth: 720,
-        children: [
-          LayoutBuilder(builder: (context, constraints) {
-            final name = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              const DoodleHeading('なまえ'),
-              const SizedBox(height: 10),
-              DoodleTextField(
-                controller: _name,
-                hint: 'プレイヤー',
-                maxLength: AppSettings.maxNameLength,
-                onChanged: (v) {
-                  if (AppSettings.validateName(v) == null) settings.playerName = v;
-                  setState(() {});
-                },
-              ),
-              if (problem != null) ...[const SizedBox(height: 8), StatusLine(state: StatusKind.bad, text: '$problem (いまの名前: ${settings.playerName})')],
-              const SizedBox(height: 14),
-              const Text('次に部屋を作る・参加するときから、相手にも表示されます。', style: TextStyle(fontSize: 15)),
-            ]);
-            return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              name,
-              const SizedBox(height: 24),
-              Row(children: [
-                AvatarIcon(avatar: settings.avatar, size: 64),
-                const SizedBox(width: 14),
-                const Expanded(child: Text('見た目は「ロッカー」で変えられます。', style: TextStyle(fontSize: 16))),
-                DoodleButton(label: 'ロッカーへ', icon: Icons.checkroom_rounded, fontSize: 16, seed: 190, onPressed: () => Services.of(context).model.go(Screen.locker)),
-              ]),
-            ]);
-          }),
-        ],
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      const DoodleHeading('なまえ', size: 21),
+      const SizedBox(height: 10),
+      DoodleTextField(
+        controller: _name,
+        hint: 'プレイヤー',
+        maxLength: AppSettings.maxNameLength,
+        onChanged: (v) {
+          if (AppSettings.validateName(v) == null) settings.playerName = v;
+          setState(() {});
+        },
       ),
-    );
+      if (problem != null) ...[const SizedBox(height: 8), StatusLine(state: StatusKind.bad, text: '$problem (いまの名前: ${settings.playerName})')],
+      const SizedBox(height: 10),
+      const Text('次に部屋を作る・参加するときから、相手にも表示されます。見た目は「ロッカー」で変えられます。', style: TextStyle(fontSize: 15)),
+    ]);
   }
 }

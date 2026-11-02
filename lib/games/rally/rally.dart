@@ -147,7 +147,32 @@ class RallyRules extends SportRules {
       ..vy = 0;
   }
 
-  void _launch(RallyWorld w, int side, Shot shot, List<GameEvent> events) {
+  /// 振ってから当たるまでの時間と、振る前にボールが届いていた時間から、当てたタイミングを決める
+  static Timing timing(Runner p, double swingTime) {
+    final elapsed = swingTime - p.swing;
+    if (p.lateBy > 0.06) return Timing.late;
+    if (elapsed > swingTime * 0.55) return Timing.early;
+    if (elapsed <= swingTime * 0.3 && p.lateBy <= 0.02) return Timing.just;
+    return Timing.normal;
+  }
+
+  /// タイミングで打球を強く・弱くする
+  static Shot adjust(Shot s, Timing t) => switch (t) {
+        // 横だけ速くする（縦も強めると、ネットぎりぎりを狙うスパイクがネットにかかる）
+        Timing.just => Shot(s.vx * 1.15, s.vy, s.kind),
+        Timing.normal => s,
+        _ => Shot(s.vx * 0.7, s.vy * 0.8, s.kind),
+      };
+
+  bool _inReach(RallyWorld w, int i) {
+    final p = w.players[i];
+    final reach = cfg.reach(p);
+    final dx = w.ball.x - (p.x + facing(i) * reach.dx);
+    final dy = w.ball.y - (p.y - reach.dy);
+    return dx * dx + dy * dy <= reach.r * reach.r;
+  }
+
+  void _launch(RallyWorld w, int side, Shot shot, List<GameEvent> events, [Timing timing = Timing.normal]) {
     w.ball
       ..vx = shot.vx
       ..vy = shot.vy;
@@ -156,7 +181,7 @@ class RallyRules extends SportRules {
     w.touches[side]++;
     w.lastShot = shot.kind;
     w.lastHitAt = w.clock;
-    events.add(GameEvent(shot.kind, side: side, x: w.ball.x, y: w.ball.y));
+    events.add(GameEvent(shot.kind, side: side, x: w.ball.x, y: w.ball.y, q: timing.wire));
   }
 
   @override
@@ -195,9 +220,20 @@ class RallyRules extends SportRules {
         }
         continue;
       }
-      w.players[i].step(inputs[i], dt, cfg.runner.within(lo, hi));
+      final p = w.players[i];
+      if (p.step(inputs[i], dt, cfg.runner.within(lo, hi))) p.lateBy = p.reachClock;
     }
     if (w.serving) return null;
+    // 振らずにボールが届く範囲にあった時間を数える（振ってから届いた分は数えない）
+    for (var i = 0; i < 2; i++) {
+      final p = w.players[i];
+      if (!_inReach(w, i)) {
+        p.reachClock = 0;
+      } else if (p.swing <= 0 && p.cd <= 0) {
+        // 振り直しを待っている間（振れない間）は、遅れとして数えない
+        p.reachClock += dt;
+      }
+    }
 
     // 返球判定: 振っている間に打点の近くへ来たら打ち返す
     for (var i = 0; i < 2; i++) {
@@ -206,13 +242,11 @@ class RallyRules extends SportRules {
       // 1回で返す競技では続けて触れない。3回まで触れる競技でも打った直後の同じボールは打てない
       if (w.lastHitter == i && (cfg.maxTouches == 1 || w.clock - w.lastHitAt < 0.3)) continue;
       final dir = facing(i);
-      final reach = cfg.reach(p);
-      final dx = w.ball.x - (p.x + dir * reach.dx);
-      final dy = w.ball.y - (p.y - reach.dy);
-      if (dx * dx + dy * dy > reach.r * reach.r) continue;
+      if (!_inReach(w, i)) continue;
       final ctx = ShotContext(player: p, ball: w.ball, dir: dir, toward: inputs[i].axis * dir, rel: (w.ball.x - p.x) * dir, netTop: cfg.netTop);
       p.swingHit = true;
-      _launch(w, i, cfg.shot(ctx), events);
+      final t = timing(p, cfg.runner.swingTime);
+      _launch(w, i, adjust(cfg.shot(ctx), t), events, t);
       if (w.touches[i] > cfg.maxTouches) return PointResult(1 - i, 'タッチ数オーバー');
     }
 

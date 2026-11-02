@@ -124,32 +124,28 @@ class _HomeScreenState extends State<HomeScreen> {
         const _NearbyPanel(),
         const SizedBox(height: 18),
         const SizedBox(height: 4),
-        Align(
-          alignment: Alignment.centerRight,
-          child: SizedBox(
-            width: 330,
-            child: Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              alignment: WrapAlignment.end,
-              children: [
-                for (final (i, (label, icon, screen)) in const [
-                  ('今日のクエスト', Icons.flag_outlined, Screen.quests),
-                  ('ショップ', Icons.storefront_outlined, Screen.shop),
-                  ('ロッカー', Icons.checkroom_rounded, Screen.locker),
-                  ('なまえ', Icons.person_outline_rounded, Screen.profile),
-                  ('せいせき', Icons.emoji_events_outlined, Screen.records),
-                  ('あそびかた', Icons.menu_book_rounded, Screen.howto),
-                  ('設定', Icons.tune_rounded, Screen.settings),
-                ].indexed)
-                  SizedBox(
-                    width: i == 0 ? 330 : 160,
-                    child: DoodleButton(label: label, icon: icon, seed: 31 + i, fontSize: 16, primary: i == 0, onPressed: () => model.go(screen)),
-                  ),
-              ],
-            ),
-          ),
-        ),
+        // 「近くの PONG!」と同じ横幅に、2列で並べる（いちばん上の「今日のクエスト」だけ横いっぱい）
+        LayoutBuilder(builder: (context, c) {
+          final half = (c.maxWidth - 10) / 2;
+          return Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              for (final (i, (label, icon, screen)) in const [
+                ('今日のクエスト', Icons.flag_outlined, Screen.quests),
+                ('ショップ', Icons.storefront_outlined, Screen.shop),
+                ('ロッカー', Icons.checkroom_rounded, Screen.locker),
+                ('せいせき', Icons.emoji_events_outlined, Screen.records),
+                ('あそびかた', Icons.menu_book_rounded, Screen.howto),
+                ('設定', Icons.tune_rounded, Screen.settings),
+              ].indexed)
+                SizedBox(
+                  width: i == 0 || i == 5 ? c.maxWidth : half,
+                  child: DoodleButton(label: label, icon: icon, seed: 31 + i, fontSize: 16, primary: i == 0, onPressed: () => model.go(screen)),
+                ),
+            ],
+          );
+        }),
       ],
     );
     const logo = Column(

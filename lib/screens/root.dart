@@ -33,6 +33,7 @@ class RootScreen extends StatefulWidget {
 
 class _RootScreenState extends State<RootScreen> with WidgetsBindingObserver {
   late var _splash = widget.splash;
+  Screen? _lastScreen;
 
   @override
   void initState() {
@@ -58,6 +59,14 @@ class _RootScreenState extends State<RootScreen> with WidgetsBindingObserver {
     return ListenableBuilder(
       listenable: Listenable.merge([model, Services.of(context).settings, model.updates]),
       builder: (context, _) {
+        // 画面が切り替わったら、前の画面で開いていた確認（「試合を抜けますか？」など）を閉じる。
+        // 残すと、試合が終わった後の結果画面などで「退出する」を押せてしまう
+        if (_lastScreen != null && _lastScreen != model.screen) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) Navigator.of(context).popUntil((r) => r.isFirst);
+          });
+        }
+        _lastScreen = model.screen;
         // const にしない: 部屋や試合の状態が変わるたびに画面を作り直す
         final settings = Services.of(context).settings;
         if (_splash) {
@@ -79,7 +88,6 @@ class _RootScreenState extends State<RootScreen> with WidgetsBindingObserver {
                 Screen.howto => HowToScreen(),
                 Screen.records => RecordsScreen(),
                 Screen.settings => SettingsScreen(),
-                Screen.profile => ProfileScreen(),
                 Screen.quests => QuestScreen(),
                 Screen.shop => ShopScreen(),
                 Screen.locker => LockerScreen(),

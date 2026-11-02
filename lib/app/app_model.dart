@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/widgets.dart';
 
 import '../games/core/catalog.dart';
+import '../games/core/common.dart';
 import '../games/core/match.dart';
 import '../games/core/painting.dart';
 import '../games/rally/rally.dart';
@@ -36,10 +37,10 @@ class MatchFeed extends ChangeNotifier {
     latest = s;
     for (final e in s.events) {
       if (e.x != null && e.y != null) {
-        bursts.add(Burst(e.x!, e.y!, now, big: const {'spike', 'smash', 'counter', 'touche'}.contains(e.type)));
+        bursts.add(Burst(e.x!, e.y!, now, big: const {'spike', 'smash', 'counter', 'touche'}.contains(e.type), timing: Timing.of(e.q)));
       }
     }
-    bursts.removeWhere((b) => now - b.born > Burst.life);
+    bursts.removeWhere((b) => now - b.born > Burst.labelLife);
     final h = Hud.of(s);
     if (h != hud) {
       hud = h;
@@ -122,7 +123,7 @@ class ConnectionProblem {
   final DateTime? since;
 }
 
-enum Screen { home, create, join, nearby, records, room, match, result, howto, settings, profile, quests, shop, locker }
+enum Screen { home, create, join, nearby, records, room, match, result, howto, settings, quests, shop, locker }
 
 /// 画面の流れとセッションをまとめる。タイトル → 対戦準備 → 部屋（待機）→ 試合 → 結果。
 class AppModel extends ChangeNotifier implements SessionListener {
@@ -462,7 +463,7 @@ class AppModel extends ChangeNotifier implements SessionListener {
     if (s.phase == MatchPhase.over && !_recorded) _record(s);
     feed.push(s, DateTime.now().millisecondsSinceEpoch / 1000);
     for (final e in s.events) {
-      feedback.playEvent(e.type, side: e.side, you: you);
+      feedback.playEvent(e.type, side: e.side, you: you, q: e.q);
     }
     if (s.phase == MatchPhase.intro) {
       final c = s.timer.ceil();

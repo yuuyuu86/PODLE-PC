@@ -23,6 +23,9 @@ class Fencer {
   double guardBuf = 0;
   bool hit = false;
 
+  /// パリィされて後ろへ下がる残り時間（固まる時間が延びても、下がる距離は変えない）
+  double backTime = 0;
+
   Map<String, Object?> toJson() => {'s': side, 'x': r2(x), 'st': state.name, 'k': r2(timer)};
 
   static Fencer fromJson(Map<String, Object?> m) => Fencer((m['s'] as num).toInt())
@@ -65,6 +68,12 @@ class FencingRules extends SportRules {
   static const tParryRecover = 0.32;
   static const tParried = 0.55; // パリィされた側の硬直
   static const tDoubleWindow = 0.06; // 相打ちとみなす時間差
+
+  /// パリィを構えてから突きが届くまでの時間で決める
+  static Timing parryTiming(double elapsed) => elapsed <= 0.08 ? Timing.just : (elapsed > 0.16 ? Timing.early : Timing.normal);
+
+  /// 突きが伸び始めてから当たるまでの時間で決める
+  static Timing lungeTiming(double elapsed) => elapsed >= tExtend * 0.55 ? Timing.just : (elapsed < 0.03 ? Timing.close : Timing.normal);
 
   @override
   int? get winScore => 5;
@@ -145,7 +154,12 @@ class FencingRules extends SportRules {
       final target = canMove ? a * (a * dir > 0 ? 250 : 220) : 0.0;
       f.vx = approach(f.vx, target, 2400 * dt);
       if (f.state == FencerState.extend) f.vx = dir * 330;
-      if (f.state == FencerState.parried) f.vx = -dir * 120;
+      if (f.state == FencerState.parried && f.backTime > 0) {
+        f.vx = -dir * 120;
+        f.backTime -= dt;
+      } else if (f.state == FencerState.parried) {
+        f.vx = 0;
+      }
       f.x += f.vx * dt;
     }
 
@@ -173,13 +187,16 @@ class FencingRules extends SportRules {
       f.hit = true;
       const y = Field.ground - 66;
       if (o.state == FencerState.parry) {
+        // 突きが届く直前に構えたパリィはジャスト（相手が長く固まる）。早すぎたパリィは弱い
+        final t = parryTiming(tParry - o.timer);
         f
           ..state = FencerState.parried
-          ..timer = tParried;
+          ..timer = switch (t) { Timing.just => tParried * 1.6, Timing.early => tParried * 0.5, _ => tParried }
+          ..backTime = math.min(tParried, t == Timing.early ? tParried * 0.5 : tParried);
         o
           ..state = FencerState.idle // パリィ成功側はすぐ反撃できる
           ..timer = 0;
-        events.add(GameEvent('parry', side: 1 - i, x: tip, y: y));
+        events.add(GameEvent('parry', side: 1 - i, x: tip, y: y, q: t.wire));
         continue;
       }
       final p = w.pendingSide;
@@ -187,10 +204,12 @@ class FencingRules extends SportRules {
         events.add(GameEvent('clash', x: tip, y: y));
         return PointResult(null, '相打ち');
       }
+      // 剣が伸びきるところで当てるとジャスト（相打ちにならない）。近すぎて突き始めに当たると弱い（相打ちになりやすい）
+      final t = lungeTiming(tExtend - f.timer);
       w
         ..pendingSide = i
-        ..pendingTimer = tDoubleWindow;
-      events.add(GameEvent('touche', side: i, x: tip, y: y));
+        ..pendingTimer = switch (t) { Timing.just => 0, Timing.close => tDoubleWindow * 2, _ => tDoubleWindow };
+      events.add(GameEvent('touche', side: i, x: tip, y: y, q: t.wire));
     }
 
     final p = w.pendingSide;

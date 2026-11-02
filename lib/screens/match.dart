@@ -11,6 +11,7 @@ import '../games/core/catalog.dart';
 import '../games/core/common.dart';
 import '../games/core/match.dart';
 import '../games/core/painting.dart';
+import '../games/core/stage.dart';
 import '../games/rally/rally.dart';
 import '../ui/doodle.dart';
 import '../ui/logo.dart';
@@ -38,7 +39,8 @@ class MatchScreen extends StatelessWidget {
         Positioned.fill(
           child: LayoutBuilder(
             builder: (context, c) {
-              final overlays = _Overlays(game: game);
+              // LayoutBuilder の中は大きさが変わらないと作り直されないので、表示は試合の状態の変化で作り直す
+              final overlays = ListenableBuilder(listenable: model.feed, builder: (context, _) => _Overlays(game: game));
               if (!split) return overlays;
               final k = math.min(c.maxWidth / Field.center, c.maxHeight / Field.height);
               final free = c.maxWidth - Field.center * k;
@@ -155,8 +157,11 @@ class _CourtPainter extends CustomPainter {
       canvas.scale(k);
     }
     final painter = s.game.painter;
-    painter.paintCourt(canvas);
     final now = time.value;
+    final stage = Stage.of(s.stage);
+    StagePainter.paint(canvas, stage, now);
+    painter.paintCourt(canvas);
+    if (s.phase == MatchPhase.intro) StagePainter.label(canvas, stage);
     painter.paint(canvas, s.world, PaintInfo(you: you, time: now, phase: s.phase, server: s.server, avatars: avatars));
     // 得点した瞬間の着地点（IN / OUT）
     final lp = s.lastPoint;
@@ -208,13 +213,16 @@ class _MatchHud extends StatelessWidget {
     final serveShown = game.rules.serveRule != ServeRule.none;
     return Row(
       children: [
-        DoodleIconButton(
+        // 試合中のボタンはキーボードで押せないようにする（Space や Enter で「退出」が押されてしまうため）
+        ExcludeFocus(
+         child: DoodleIconButton(
           icon: Icons.close_rounded,
           label: '退出',
           onPressed: () async {
             final ok = await confirmDialog(context, message: '試合を抜けてタイトルに戻りますか？（相手の試合も終わります）', ok: '退出する');
             if (ok) model.leaveRoom();
           },
+         ),
         ),
         Expanded(
           child: h.extra != null
@@ -240,10 +248,12 @@ class _MatchHud extends StatelessWidget {
         ),
         ListenableBuilder(
           listenable: s.settings,
-          builder: (context, _) => DoodleIconButton(
+          builder: (context, _) => ExcludeFocus(
+           child: DoodleIconButton(
             icon: s.settings.soundOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
             label: s.settings.soundOn ? '効果音をミュート' : '効果音をオン',
             onPressed: () => s.settings.soundOn = !s.settings.soundOn,
+           ),
           ),
         ),
       ],

@@ -104,9 +104,12 @@ class PressTracker {
 
 /// 試合中の出来事（効果音・演出用）
 class GameEvent {
-  const GameEvent(this.type, {this.side, this.x, this.y});
+  const GameEvent(this.type, {this.side, this.x, this.y, this.q});
 
   final String type;
+
+  /// 当てたタイミング（[Timing] の名前。'just' / 'early' / 'late' / 'close'）。null はふつう
+  final String? q;
   final int? side;
   final double? x;
   final double? y;
@@ -116,10 +119,30 @@ class GameEvent {
         if (side != null) 's': side,
         if (x != null) 'x': r2(x!),
         if (y != null) 'y': r2(y!),
+        if (q != null) 'q': q,
       };
 
   static GameEvent fromJson(Map<String, Object?> m) =>
-      GameEvent(m['t'] as String, side: (m['s'] as num?)?.toInt(), x: (m['x'] as num?)?.toDouble(), y: (m['y'] as num?)?.toDouble());
+      GameEvent(m['t'] as String, side: (m['s'] as num?)?.toInt(), x: (m['x'] as num?)?.toDouble(), y: (m['y'] as num?)?.toDouble(), q: m['q'] as String?);
+}
+
+/// 攻撃を当てたタイミングの出来。ジャストは強く、早すぎ・遅すぎ・近すぎは弱くなる
+enum Timing {
+  just('JUST!'),
+  normal(''),
+  early('はやい'),
+  late('おそい'),
+  close('ちかい');
+
+  const Timing(this.label);
+  final String label;
+
+  bool get weak => this == early || this == late || this == close;
+
+  /// 送るときの名前（ふつうは送らない）
+  String? get wire => this == normal ? null : name;
+
+  static Timing of(String? q) => q == null ? normal : (values.asNameMap()[q] ?? normal);
 }
 
 sealed class StepResult {}
@@ -215,6 +238,12 @@ class Runner {
   double swing = 0;
   bool swingHit = false;
   double cd = 0;
+
+  /// 振らずにボールが届く範囲にあった時間（遅すぎの判定用）
+  double reachClock = 0;
+
+  /// 振り始めたとき、ボールがすでに届く範囲にあった時間
+  double lateBy = 0;
 
   /// 1フレーム進める。振り始めたら true。
   bool step(PlayerInput inp, double dt, RunnerParams o) {

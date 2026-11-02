@@ -4,7 +4,6 @@ import '../app/app_model.dart';
 import '../app/quests.dart';
 import '../app/services.dart';
 import '../avatar/avatar.dart';
-import '../avatar/avatar_editor.dart';
 import '../avatar/avatar_painter.dart';
 import '../ui/doodle.dart';
 import '../ui/widgets.dart';
@@ -154,9 +153,16 @@ class ShopScreen extends StatelessWidget {
   }
 }
 
-/// 持っているコスチュームで着せ替える
-class LockerScreen extends StatelessWidget {
+/// 持っているコスチュームで着せ替える。左で部位とパーツを選び、右に大きく映す
+class LockerScreen extends StatefulWidget {
   const LockerScreen({super.key});
+
+  @override
+  State<LockerScreen> createState() => _LockerScreenState();
+}
+
+class _LockerScreenState extends State<LockerScreen> {
+  AvatarPart _part = AvatarPart.top;
 
   @override
   Widget build(BuildContext context) {
@@ -167,18 +173,116 @@ class LockerScreen extends StatelessWidget {
       actions: const [CoinBadge(), SizedBox(width: 16)],
       child: ListenableBuilder(
         listenable: s.settings,
-        builder: (context, _) => PageBody(maxWidth: 1040, children: [
-          LayoutBuilder(
-            builder: (context, c) => AvatarEditor(
-              value: s.settings.avatar,
-              onChanged: (a) => s.settings.avatar = a,
-              owns: s.settings.owns,
-              horizontal: c.maxWidth >= 760 && MediaQuery.textScalerOf(context).scale(1) <= 1.3,
+        builder: (context, _) {
+          final avatar = s.settings.avatar;
+          final picker = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            // 部位のタブ
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              for (final (i, p) in AvatarPart.values.indexed)
+                SizedBox(
+                  width: 150,
+                  child: DoodleButton(label: p.label, fontSize: 16, seed: 400 + i, primary: p == _part, onPressed: () => setState(() => _part = p)),
+                ),
+            ]),
+            const SizedBox(height: 16),
+            // パーツの一覧（持っていないものは錠前と値段）
+            Wrap(spacing: 12, runSpacing: 12, children: [
+              for (var i = 0; i < _part.options.length; i++)
+                _LockerTile(
+                  avatar: avatar.withChoice(_part, i),
+                  label: _part.options[i],
+                  equipped: avatar[_part] == i,
+                  owned: s.settings.owns(_part, i),
+                  price: Avatar.price(_part, i),
+                  bust: _part != AvatarPart.pose,
+                  seed: 420 + i,
+                  onTap: () => s.settings.owns(_part, i) ? s.settings.avatar = avatar.withChoice(_part, i) : s.model.go(Screen.shop),
+                ),
+            ]),
+          ]);
+          final preview = Column(children: [
+            DoodleBox(
+              seed: 450,
+              shadow: true,
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+              child: Column(children: [
+                AvatarView(avatar: avatar, size: 300),
+                const SizedBox(height: 6),
+                Text(s.settings.playerName, style: const TextStyle(fontSize: 24)),
+                Text(AvatarPart.values.map(avatar.optionLabel).join('・'), textAlign: TextAlign.center, style: const TextStyle(fontSize: 14, color: Palette.pencil)),
+              ]),
+            ),
+            const SizedBox(height: 14),
+            DoodleButton(label: 'おまかせ', icon: Icons.casino_outlined, fontSize: 17, seed: 451, onPressed: () => s.settings.avatar = Avatar.random(null, s.settings.owns)),
+          ]);
+          return PageBody(maxWidth: 1180, children: [
+            LayoutBuilder(builder: (context, c) {
+              if (c.maxWidth < 820) return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [preview, const SizedBox(height: 20), picker]);
+              return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Expanded(child: picker),
+                const SizedBox(width: 28),
+                SizedBox(width: 360, child: preview),
+              ]);
+            }),
+          ]);
+        },
+      ),
+    );
+  }
+}
+
+class _LockerTile extends StatelessWidget {
+  const _LockerTile({required this.avatar, required this.label, required this.equipped, required this.owned, required this.price, required this.bust, required this.seed, required this.onTap});
+
+  final Avatar avatar;
+  final String label;
+  final bool equipped;
+  final bool owned;
+  final int price;
+  final bool bust;
+  final int seed;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = equipped ? Palette.paper : Palette.ink;
+    return Semantics(
+      button: true,
+      selected: equipped,
+      label: owned ? label : '$label（$priceコイン。ショップで買えます）',
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: onTap,
+          child: SizedBox(
+            width: 128,
+            height: 156,
+            child: CustomPaint(
+              painter: SketchBorderPainter(seed: seed, fillColor: equipped ? Palette.ink : Palette.paper),
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(children: [
+                  Expanded(
+                    child: Opacity(
+                      opacity: owned ? 1 : 0.35,
+                      child: AvatarView(avatar: avatar, size: 96, bust: bust, onDark: equipped),
+                    ),
+                  ),
+                  Text(label, maxLines: 1, overflow: TextOverflow.fade, softWrap: false, style: TextStyle(fontSize: 15, color: fg)),
+                  if (!owned)
+                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      const Icon(Icons.lock_outline_rounded, size: 14, color: Palette.pencil),
+                      Text(' $price', style: const TextStyle(fontSize: 13, color: Palette.pencil)),
+                    ])
+                  else if (equipped)
+                    Text('きている', style: TextStyle(fontSize: 13, color: fg))
+                  else
+                    const SizedBox(height: 17),
+                ]),
+              ),
             ),
           ),
-          const SizedBox(height: 14),
-          const Text('新しいコスチュームはショップで買えます。', textAlign: TextAlign.center, style: TextStyle(fontSize: 15, color: Palette.pencil)),
-        ]),
+        ),
       ),
     );
   }

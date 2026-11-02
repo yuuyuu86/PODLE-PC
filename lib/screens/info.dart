@@ -10,6 +10,7 @@ import '../games/core/catalog.dart';
 import '../ui/doodle.dart';
 import '../ui/logo.dart';
 import '../ui/widgets.dart';
+import 'profile.dart';
 import 'root.dart';
 
 /// あそびかた。「はじめかた」と競技ごとのタブに分ける（スマホ版と同じ）。
@@ -105,6 +106,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: PageBody(
         maxWidth: 680,
         children: [
+          const DoodleBox(seed: 81, child: NameSetting()),
+          const SizedBox(height: 18),
           DoodleBox(
             seed: 82,
             child: ListenableBuilder(

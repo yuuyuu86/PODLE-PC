@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -66,7 +68,37 @@ class PongApp extends StatelessWidget {
           textSelectionTheme: const TextSelectionThemeData(cursorColor: Palette.ink),
           sliderTheme: const SliderThemeData(activeTrackColor: Palette.ink, thumbColor: Palette.ink, inactiveTrackColor: Palette.faint),
         ),
+        builder: (context, child) => UiScale(child: child!),
         home: RootScreen(splash: splash),
+      ),
+    );
+  }
+}
+
+/// 画面（ウィンドウ）が大きいときは、文字・ボタン・コートなど画面全体を同じ割合で大きくする。
+/// 1280x800 を基準に、それより大きければ最大 2 倍まで拡大する（小さい画面ではそのまま）。
+class UiScale extends StatelessWidget {
+  const UiScale({super.key, required this.child});
+  final Widget child;
+
+  static const base = Size(1280, 800);
+
+  static double of(Size size) => math.min(size.width / base.width, size.height / base.height).clamp(1.0, 2.0);
+
+  @override
+  Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    final k = of(mq.size);
+    if (k <= 1.01) return child;
+    return FittedBox(
+      fit: BoxFit.fill,
+      child: SizedBox(
+        width: mq.size.width / k,
+        height: mq.size.height / k,
+        child: MediaQuery(
+          data: mq.copyWith(size: mq.size / k, padding: mq.padding / k, viewPadding: mq.viewPadding / k, viewInsets: mq.viewInsets / k),
+          child: child,
+        ),
       ),
     );
   }

@@ -1,8 +1,9 @@
 import 'package:audioplayers/audioplayers.dart';
 
+import '../games/core/common.dart';
 import 'settings.dart';
 
-enum Sound { hit, bounce, point, lose, win, tap }
+enum Sound { hit, bounce, point, lose, win, tap, just, weak }
 
 /// 効果音（スマホ版と同じ音）。設定でミュート・音量を切り替えられる。
 class GameFeedback {
@@ -16,7 +17,7 @@ class GameFeedback {
       try {
         _pools[s] = await AudioPool.create(
           source: AssetSource('sounds/${s.name}.wav'),
-          maxPlayers: s == Sound.hit || s == Sound.bounce ? 3 : 1,
+          maxPlayers: s == Sound.hit || s == Sound.bounce || s == Sound.just || s == Sound.weak ? 3 : 1,
         );
       } catch (_) {
         // 音が出せない環境でもゲームは続ける
@@ -30,7 +31,17 @@ class GameFeedback {
   }
 
   /// 試合のイベントを音に割り当てる
-  void playEvent(String type, {int? side, required int you}) {
+  void playEvent(String type, {int? side, required int you, String? q}) {
+    // タイミングの出来で音を変える（ジャストは高く澄んだ音、弱いと鈍い音）
+    final t = Timing.of(q);
+    if (t == Timing.just) {
+      play(Sound.just);
+      return;
+    }
+    if (t.weak) {
+      play(Sound.weak, gain: 0.9);
+      return;
+    }
     switch (type) {
       case 'serve' || 'bump' || 'toss' || 'drive' || 'drop' || 'clear' || 'swing' || 'lunge':
         play(Sound.hit, gain: 0.7);
