@@ -230,6 +230,51 @@ abstract final class Figure {
   }
 }
 
+/// 試合中のスタンプ。送った選手の側の上に、手描きのふきだしで出す
+abstract final class StampBubble {
+  static const life = 2.2;
+
+  /// 2台で半分ずつ映すので、両方の半分に出す（相手側の半分では、ふきだしの先を送った側＝ネットへ向ける）
+  static void draw(Canvas c, int side, Stamp stamp, double age) {
+    _draw(c, side, side, stamp, age);
+    _draw(c, 1 - side, side, stamp, age);
+  }
+
+  static void _draw(Canvas c, int half, int side, Stamp stamp, double age) {
+    if (age < 0 || age > life) return;
+    final pop = age < 0.15 ? 0.6 + age / 0.15 * 0.5 : (age < 0.3 ? 1.1 - (age - 0.15) / 0.15 * 0.1 : 1.0);
+    final alpha = age > life - 0.4 ? (life - age) / 0.4 : 1.0;
+    final at = Offset(half == 0 ? Field.center / 2 : Field.center * 1.5, half == side ? 120 : 190);
+    c.save();
+    c.translate(at.dx, at.dy);
+    c.scale(pop);
+    c.rotate(side == 0 ? -0.05 : 0.05);
+    final tp = TextPainter(
+      text: TextSpan(text: stamp.text, style: TextStyle(fontFamily: kFontFamily, fontSize: 30, color: Palette.ink.withValues(alpha: alpha))),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final box = Rect.fromCenter(center: Offset.zero, width: tp.width + 40, height: tp.height + 22);
+    // 自分の半分では選手のほう（外側）、相手の半分ではネットのほうを指す
+    final tail = half == side ? (side == 0 ? -1.0 : 1.0) : (half == 0 ? 1.0 : -1.0);
+    final bubble = Path()
+      ..addRRect(RRect.fromRectAndRadius(box, const Radius.circular(18)))
+      ..moveTo(tail * 16, box.bottom - 2)
+      ..lineTo(tail * 30, box.bottom + 20)
+      ..lineTo(tail * 2, box.bottom - 2);
+    c.drawPath(bubble, Sketch.fill(Colors.white.withValues(alpha: alpha)));
+    c.drawPath(Sketch.rect(box, seed: 7 + stamp.index, wobble: 0.8), Sketch.pen(2.6, color: Palette.ink.withValues(alpha: alpha)));
+    c.drawPath(
+      Path()
+        ..moveTo(tail * 16, box.bottom)
+        ..lineTo(tail * 30, box.bottom + 20)
+        ..lineTo(tail * 2, box.bottom),
+      Sketch.pen(2.6, color: Palette.ink.withValues(alpha: alpha)),
+    );
+    tp.paint(c, Offset(-tp.width / 2, -tp.height / 2));
+    c.restore();
+  }
+}
+
 /// 打った瞬間などの短い衝撃線
 class Burst {
   const Burst(this.x, this.y, this.born, {this.big = false, this.timing = Timing.normal});

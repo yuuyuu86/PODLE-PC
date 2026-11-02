@@ -71,9 +71,27 @@ class GameKeyboard {
     if (!v) releaseAll();
   }
 
+  /// 画面のボタンからスタンプを送る
+  void sendStamp(int i) {
+    if (!_active) return;
+    state = KeyState(l: state.l, r: state.r, j: state.j, a: state.a, jc: state.jc, ac: state.ac, st: i, sc: state.sc + 1);
+    onChange(state);
+  }
+
+  static const stampKeys = [PhysicalKeyboardKey.digit1, PhysicalKeyboardKey.digit2, PhysicalKeyboardKey.digit3, PhysicalKeyboardKey.digit4];
+
   bool _handle(KeyEvent e) {
     final k = e.physicalKey;
     final b = _bindings();
+    // スタンプ（1〜4）。割り当てたキーと重なっていなければ、こちらで受け取る
+    final stamp = stampKeys.indexOf(k);
+    if (_active && stamp >= 0 && !GameAction.values.any((a) => b[a] == k)) {
+      if (e is KeyDownEvent) {
+        state = KeyState(l: state.l, r: state.r, j: state.j, a: state.a, jc: state.jc, ac: state.ac, st: stamp, sc: state.sc + 1);
+        onChange(state);
+      }
+      return true;
+    }
     if (!_active || !GameAction.values.any((a) => b[a] == k)) {
       return false;
     }
@@ -99,7 +117,7 @@ class GameKeyboard {
     _sync();
   }
 
-  KeyState _with({int? jc, int? ac}) => KeyState(l: state.l, r: state.r, j: state.j, a: state.a, jc: jc ?? state.jc, ac: ac ?? state.ac);
+  KeyState _with({int? jc, int? ac}) => KeyState(l: state.l, r: state.r, j: state.j, a: state.a, jc: jc ?? state.jc, ac: ac ?? state.ac, st: state.st, sc: state.sc);
 
   void _sync() {
     final b = _bindings();
@@ -110,6 +128,8 @@ class GameKeyboard {
       a: _held.contains(b[GameAction.action]),
       jc: state.jc,
       ac: state.ac,
+      st: state.st,
+      sc: state.sc,
     );
     onChange(state);
   }

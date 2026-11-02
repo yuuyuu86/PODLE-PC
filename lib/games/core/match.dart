@@ -115,6 +115,10 @@ class MatchEngine {
   }
 
   static const introTime = 4.0;
+
+  /// スタンプを続けて送れる間隔（フレーム数。60fps で約1秒）
+  static const stampGapTicks = 60;
+  final _lastStamp = [-stampGapTicks, -stampGapTicks];
   static const pointTime = 1.5;
   static const resumeTime = 3.0;
 
@@ -138,6 +142,13 @@ class MatchEngine {
     final s = state;
     s.tick++;
     s.events = [];
+    // スタンプは試合のどの場面でも送れる（連打は少し間をあける）
+    for (var i = 0; i < 2 && i < inputs.length; i++) {
+      final st = Stamp.of(inputs[i].stamp);
+      if (st == null || s.tick - _lastStamp[i] < stampGapTicks) continue;
+      _lastStamp[i] = s.tick;
+      s.events.add(GameEvent('stamp', side: i, q: st.name));
+    }
     if (s.paused || s.phase == MatchPhase.over) return;
     if (s.resumeTimer > 0) {
       s.resumeTimer = math.max(0, s.resumeTimer - dt);

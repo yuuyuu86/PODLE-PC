@@ -29,7 +29,11 @@ class PlayerInput {
     this.act = false,
     this.jumpPressed = false,
     this.actPressed = false,
+    this.stamp,
   });
+
+  /// このフレームで送ったスタンプ（[Stamp] の番号）
+  final int? stamp;
 
   final bool left;
   final bool right;
@@ -49,12 +53,17 @@ class PlayerInput {
         act: act,
         jumpPressed: jumpPressed ?? this.jumpPressed,
         actPressed: actPressed,
+        stamp: stamp,
       );
 }
 
 /// キーボードの状態。押しっぱなしは状態、連打は通算の押下回数で表すので、通信の間隔に関係なく取りこぼさない。
 class KeyState {
-  const KeyState({this.l = false, this.r = false, this.j = false, this.a = false, this.jc = 0, this.ac = 0});
+  const KeyState({this.l = false, this.r = false, this.j = false, this.a = false, this.jc = 0, this.ac = 0, this.st = 0, this.sc = 0});
+
+  /// 最後に押したスタンプの番号と、スタンプを押した通算の回数（回数が増えたら送ったとみなす）
+  final int st;
+  final int sc;
 
   final bool l;
   final bool r;
@@ -63,7 +72,7 @@ class KeyState {
   final int jc;
   final int ac;
 
-  Map<String, Object> toJson() => {'l': l, 'r': r, 'j': j, 'a': a, 'jc': jc, 'ac': ac};
+  Map<String, Object> toJson() => {'l': l, 'r': r, 'j': j, 'a': a, 'jc': jc, 'ac': ac, if (sc != 0) 'st': st, if (sc != 0) 'sc': sc};
 
   static KeyState fromJson(Map<String, Object?> m) => KeyState(
         l: m['l'] == true,
@@ -72,34 +81,59 @@ class KeyState {
         a: m['a'] == true,
         jc: (m['jc'] as num?)?.toInt() ?? 0,
         ac: (m['ac'] as num?)?.toInt() ?? 0,
+        st: (m['st'] as num?)?.toInt() ?? 0,
+        sc: (m['sc'] as num?)?.toInt() ?? 0,
       );
 
   @override
   bool operator ==(Object other) =>
-      other is KeyState && other.l == l && other.r == r && other.j == j && other.a == a && other.jc == jc && other.ac == ac;
+      other is KeyState && other.l == l && other.r == r && other.j == j && other.a == a && other.jc == jc && other.ac == ac && other.st == st && other.sc == sc;
 
   @override
-  int get hashCode => Object.hash(l, r, j, a, jc, ac);
+  int get hashCode => Object.hash(l, r, j, a, jc, ac, st, sc);
 }
 
 /// 押下回数の差分から「押した瞬間」を取り出す。試合開始・再接続後の最初の状態を基準にする。
 class PressTracker {
-  (int, int)? _seen;
+  (int, int, int)? _seen;
 
   void reset() => _seen = null;
 
-  void baseline(KeyState k) => _seen ??= (k.jc, k.ac);
+  void baseline(KeyState k) => _seen ??= (k.jc, k.ac, k.sc);
 
   PlayerInput input(KeyState k, {required bool connected}) {
     if (!connected) {
-      if (_seen != null) _seen = (k.jc, k.ac);
+      if (_seen != null) _seen = (k.jc, k.ac, k.sc);
       return PlayerInput.none;
     }
     final s = _seen;
     if (s == null) return PlayerInput(left: k.l, right: k.r, jump: k.j, act: k.a);
-    _seen = (k.jc, k.ac);
-    return PlayerInput(left: k.l, right: k.r, jump: k.j, act: k.a, jumpPressed: k.jc != s.$1, actPressed: k.ac != s.$2);
+    _seen = (k.jc, k.ac, k.sc);
+    return PlayerInput(
+      left: k.l,
+      right: k.r,
+      jump: k.j,
+      act: k.a,
+      jumpPressed: k.jc != s.$1,
+      actPressed: k.ac != s.$2,
+      stamp: k.sc != s.$3 ? k.st : null,
+    );
   }
+}
+
+/// 試合中に送れるスタンプ（数字キーの 1〜4）
+enum Stamp {
+  nice('ナイス！'),
+  oshii('おしい！'),
+  more('まだまだ！'),
+  sorry('ごめん！');
+
+  const Stamp(this.text);
+  final String text;
+
+  static Stamp? byName(String? n) => n == null ? null : values.asNameMap()[n];
+
+  static Stamp? of(int? i) => i == null || i < 0 || i >= values.length ? null : values[i];
 }
 
 /// 試合中の出来事（効果音・演出用）

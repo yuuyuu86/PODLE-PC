@@ -84,7 +84,7 @@ void main() {
       ]);
       for (var t = 0; t < MatchEngine.introTime * 60 + 40; t++) {
         e.step([
-          PlayerInput(right: t % 90 < 50, actPressed: t == 260, jump: game != GameKind.boxing && t == 255),
+          PlayerInput(right: t % 90 < 50, actPressed: t == 260, jump: game != GameKind.boxing && t == 255, stamp: t == MatchEngine.introTime * 60 + 39 ? i % 4 : null),
           PlayerInput(left: t % 70 < 30, actPressed: t == 275, jump: game == GameKind.boxing && t > 250),
         ], 1 / 60);
       }

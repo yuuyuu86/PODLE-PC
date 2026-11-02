@@ -40,16 +40,16 @@ class MatchScreen extends StatelessWidget {
           child: LayoutBuilder(
             builder: (context, c) {
               // LayoutBuilder の中は大きさが変わらないと作り直されないので、表示は試合の状態の変化で作り直す
-              final overlays = ListenableBuilder(listenable: model.feed, builder: (context, _) => _Overlays(game: game));
-              if (!split) return overlays;
+              Widget overlays({bool side = false}) => ListenableBuilder(listenable: model.feed, builder: (context, _) => _Overlays(game: game, side: side));
+              if (!split) return overlays();
               final k = math.min(c.maxWidth / Field.center, c.maxHeight / Field.height);
               final free = c.maxWidth - Field.center * k;
-              if (free < 320) return overlays;
+              if (free < 320) return overlays();
               return Row(
                 children: [
-                  if (you == 0) SizedBox(width: free, child: overlays),
+                  if (you == 0) SizedBox(width: free, child: overlays(side: true)),
                   const Spacer(),
-                  if (you == 1) SizedBox(width: free, child: overlays),
+                  if (you == 1) SizedBox(width: free, child: overlays(side: true)),
                 ],
               );
             },
@@ -172,6 +172,9 @@ class _CourtPainter extends CustomPainter {
     }
     for (final b in feed.bursts) {
       b.draw(canvas, now);
+    }
+    for (final st in feed.stamps) {
+      StampBubble.draw(canvas, st.side, st.stamp, now - st.born);
     }
     if (split) _offscreenHint(canvas, size, s, k);
   }
@@ -486,7 +489,7 @@ class _ControlStrip extends StatelessWidget {
                     spacing: 18,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      for (final c in game.controls)
+                      for (final c in [...game.controls, const GameControl('1〜4', 'スタンプ')])
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -506,8 +509,11 @@ class _ControlStrip extends StatelessWidget {
 
 /// コートの上に重ねる表示: 開始前の操作説明、得点、一時停止、再開カウントダウン
 class _Overlays extends StatelessWidget {
-  const _Overlays({required this.game});
+  const _Overlays({required this.game, this.side = false});
   final GameKind game;
+
+  /// コートの外の空いたところに出している（何も出すものがなければ、操作方法などの案内を出す）
+  final bool side;
 
   @override
   Widget build(BuildContext context) {
@@ -609,7 +615,72 @@ class _Overlays extends StatelessWidget {
         ),
       );
     }
+    if (side && h.phase != MatchPhase.over) return _SideGuide(game: game);
     return const SizedBox.shrink();
+  }
+}
+
+/// コートの外の空いたところに出す、試合中の案内（ルール・操作方法・スタンプ）
+class _SideGuide extends StatelessWidget {
+  const _SideGuide({required this.game});
+  final GameKind game;
+
+  @override
+  Widget build(BuildContext context) {
+    final model = Services.of(context).model;
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              DoodleBox(
+                seed: 140,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  DoodleHeading('ルール', size: 19),
+                  const SizedBox(height: 8),
+                  Text(game.ruleTextFor(model.room?.ruleValue ?? game.defaultRule), style: const TextStyle(fontSize: 15, height: 1.45)),
+                  const SizedBox(height: 4),
+                  Text(game.summary, style: const TextStyle(fontSize: 14, height: 1.45, color: Palette.pencil)),
+                ]),
+              ),
+              const SizedBox(height: 14),
+              DoodleBox(
+                seed: 141,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const DoodleHeading('そうさ', size: 19),
+                  const SizedBox(height: 8),
+                  ControlsList(controls: game.controls, size: 15),
+                ]),
+              ),
+              const SizedBox(height: 14),
+              DoodleBox(
+                seed: 142,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const DoodleHeading('スタンプ', size: 19),
+                  const SizedBox(height: 4),
+                  const Text('数字キーか、ボタンで相手に送れます', style: TextStyle(fontSize: 13, color: Palette.pencil)),
+                  const SizedBox(height: 8),
+                  Wrap(spacing: 8, runSpacing: 8, children: [
+                    for (final st in Stamp.values)
+                      ExcludeFocus(
+                        child: DoodleButton(
+                          label: '${st.index + 1}  ${st.text}',
+                          fontSize: 15,
+                          seed: 143 + st.index,
+                          onPressed: () => model.keyboard.sendStamp(st.index),
+                        ),
+                      ),
+                  ]),
+                ]),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

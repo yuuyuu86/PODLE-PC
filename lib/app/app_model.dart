@@ -24,11 +24,15 @@ import 'settings.dart';
 class MatchFeed extends ChangeNotifier {
   MatchState? latest;
   List<Burst> bursts = [];
+
+  /// 表示中のスタンプ（送った側・種類・出た時刻）
+  List<({int side, Stamp stamp, double born})> stamps = [];
   Hud hud = const Hud();
 
   void reset() {
     latest = null;
     bursts = [];
+    stamps = [];
     hud = const Hud();
     notifyListeners();
   }
@@ -36,11 +40,16 @@ class MatchFeed extends ChangeNotifier {
   void push(MatchState s, double now) {
     latest = s;
     for (final e in s.events) {
+      final st = e.type == 'stamp' ? Stamp.byName(e.q) : null;
+      if (st != null && e.side != null) {
+        stamps = [...stamps.where((x) => x.side != e.side), (side: e.side!, stamp: st, born: now)];
+      }
       if (e.x != null && e.y != null) {
         bursts.add(Burst(e.x!, e.y!, now, big: const {'spike', 'smash', 'counter', 'touche'}.contains(e.type), timing: Timing.of(e.q)));
       }
     }
     bursts.removeWhere((b) => now - b.born > Burst.labelLife);
+    stamps.removeWhere((x) => now - x.born > StampBubble.life);
     final h = Hud.of(s);
     if (h != hud) {
       hud = h;

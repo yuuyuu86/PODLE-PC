@@ -33,6 +33,10 @@ class GameFeedback {
   /// 試合のイベントを音に割り当てる
   void playEvent(String type, {int? side, required int you, String? q}) {
     // タイミングの出来で音を変える（ジャストは高く澄んだ音、弱いと鈍い音）
+    if (type == 'stamp') {
+      play(Sound.tap, gain: 0.8);
+      return;
+    }
     final t = Timing.of(q);
     if (t == Timing.just) {
       play(Sound.just);
