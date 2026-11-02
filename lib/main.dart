@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'app/app_model.dart';
 import 'app/feedback.dart';
@@ -11,6 +13,10 @@ import 'ui/doodle.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // 設定 → ライセンス に、同梱フォント（Yomogi, SIL OFL 1.1）のライセンスも出す
+  LicenseRegistry.addLicense(() async* {
+    yield LicenseEntryWithLineBreaks(['Yomogi'], await rootBundle.loadString('assets/fonts/OFL.txt'));
+  });
   final settings = await AppSettings.load();
   final feedback = GameFeedback(settings);
   await feedback.init();

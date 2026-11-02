@@ -38,12 +38,7 @@ class _HowToScreenState extends State<HowToScreen> {
       onBack: () => model.go(Screen.home),
       child: PageBody(
         children: [
-          DoodleTabs(
-            labels: ['はじめかた', for (final g in GameKind.values) g.title],
-            selected: _tab,
-            seed: 150,
-            onChanged: (i) => setState(() => _tab = i),
-          ),
+          DoodleTabs(labels: ['はじめかた', for (final g in GameKind.values) g.title], selected: _tab, seed: 150, onChanged: (i) => setState(() => _tab = i)),
           const SizedBox(height: 20),
           if (_tab > 0)
             _GameRules(game: GameKind.values[_tab - 1])
@@ -51,10 +46,12 @@ class _HowToScreenState extends State<HowToScreen> {
             const DoodleHeading('はじめかた', size: 21),
             const SizedBox(height: 10),
             for (final (i, s) in _steps.indexed)
-              Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('${i + 1}. $s', style: const TextStyle(fontSize: 17, height: 1.45))),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text('${i + 1}. $s', style: const TextStyle(fontSize: 17, height: 1.45)),
+              ),
             const SizedBox(height: 6),
-            const Text('2台を横に並べるとコートがつながります。左の選手のPCにはコートの左半分、右の選手のPCには右半分が映ります。自分の選手は太い線と、墨で塗った「あなた」の名札、相手は点線の名札「あいて」で見分けられます。',
-                style: TextStyle(fontSize: 16, height: 1.45)),
+            const Text('2台を横に並べるとコートがつながります。左の選手のPCにはコートの左半分、右の選手のPCには右半分が映ります。自分の選手は太い線と、墨で塗った「あなた」の名札、相手は点線の名札「あいて」で見分けられます。', style: TextStyle(fontSize: 16, height: 1.45)),
             const SizedBox(height: 6),
             const Text('通信が切れたら試合は自動で止まり、つながり直すと同じところから続きます。', style: TextStyle(fontSize: 16, height: 1.45)),
           ],
@@ -152,31 +149,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
               final status = u.checking
                   ? '確かめています…'
                   : u.latest != null
-                      ? '新しい版 ${u.latest} があります'
-                      : u.upToDate == true
-                          ? 'いまの版が最新です'
-                          : '';
-              return DoodleBox(
-                seed: 91,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('PONG! ${AppVersion.app}', style: const TextStyle(fontSize: 21)),
-                          if (status.isNotEmpty) Text(status, style: const TextStyle(fontSize: 15, color: Palette.pencil)),
-                        ],
+                  ? '新しい版 ${u.latest} があります'
+                  : u.upToDate == true
+                  ? 'いまの版が最新です'
+                  : '';
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  DoodleBox(
+                    seed: 91,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('PONG! ${AppVersion.app}', style: const TextStyle(fontSize: 21)),
+                              const Text('© 2026 dev.yuta', style: TextStyle(fontSize: 14, color: Palette.pencil)),
+                              if (status.isNotEmpty) Text(status, style: const TextStyle(fontSize: 15, color: Palette.pencil)),
+                            ],
+                          ),
+                        ),
+                        SizedBox(
+                          width: 200,
+                          child: u.latest != null
+                              ? DoodleButton(label: 'ダウンロード', icon: Icons.download_rounded, primary: true, fontSize: 17, seed: 92, onPressed: () => u.openDownloadPage())
+                              : DoodleButton(label: '新しい版を確かめる', fontSize: 16, seed: 93, onPressed: u.checking ? null : u.check),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: SizedBox(
+                      width: 200,
+                      child: DoodleButton(
+                        label: 'ライセンス',
+                        icon: Icons.description_outlined,
+                        fontSize: 16,
+                        seed: 94,
+                        onPressed: () => showLicensePage(context: context, applicationName: 'PONG!', applicationVersion: AppVersion.app, applicationLegalese: '© 2026 dev.yuta. All rights reserved.'),
                       ),
                     ),
-                    SizedBox(
-                      width: 200,
-                      child: u.latest != null
-                          ? DoodleButton(label: 'ダウンロード', icon: Icons.download_rounded, primary: true, fontSize: 17, seed: 92, onPressed: () => u.openDownloadPage())
-                          : DoodleButton(label: '新しい版を確かめる', fontSize: 16, seed: 93, onPressed: u.checking ? null : u.check),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               );
             },
           ),
@@ -218,8 +235,15 @@ class _KeySettingsState extends State<_KeySettings> {
       return KeyEventResult.handled;
     }
     final reserved = {
-      LogicalKeyboardKey.tab, LogicalKeyboardKey.enter, LogicalKeyboardKey.metaLeft, LogicalKeyboardKey.metaRight, LogicalKeyboardKey.controlLeft,
-      LogicalKeyboardKey.controlRight, LogicalKeyboardKey.altLeft, LogicalKeyboardKey.altRight, LogicalKeyboardKey.capsLock,
+      LogicalKeyboardKey.tab,
+      LogicalKeyboardKey.enter,
+      LogicalKeyboardKey.metaLeft,
+      LogicalKeyboardKey.metaRight,
+      LogicalKeyboardKey.controlLeft,
+      LogicalKeyboardKey.controlRight,
+      LogicalKeyboardKey.altLeft,
+      LogicalKeyboardKey.altRight,
+      LogicalKeyboardKey.capsLock,
     };
     if (reserved.contains(e.logicalKey)) return KeyEventResult.handled;
     Services.of(context).settings.bindKey(a, e.physicalKey, KeyBindings.nameOf(e));
@@ -254,9 +278,7 @@ class _KeySettingsState extends State<_KeySettings> {
                       children: [
                         SizedBox(width: 240, child: Text(a.label, style: const TextStyle(fontSize: 18))),
                         Expanded(
-                          child: _waiting == a
-                              ? const Text('キーを押してください…', style: TextStyle(fontSize: 18))
-                              : Align(alignment: Alignment.centerLeft, child: Keycap(keys.label(a), size: 17)),
+                          child: _waiting == a ? const Text('キーを押してください…', style: TextStyle(fontSize: 18)) : Align(alignment: Alignment.centerLeft, child: Keycap(keys.label(a), size: 17)),
                         ),
                         SizedBox(
                           width: 130,

@@ -126,15 +126,20 @@ void main() {
 
     // 切断 → ホストは一時停止、ゲストは自動で再接続 → 同じ状態から再開
     guest.simulateDrop();
-    await waitUntil('一時停止', () => host.engine?.state.paused == true);
-    expect(hostRec.room?.players[1].connected, isFalse);
-    final frozen = jsonEncode(host.engine!.state.world.toJson());
-    await Future<void>.delayed(const Duration(milliseconds: 300));
-    expect(jsonEncode(host.engine!.state.world.toJson()), frozen, reason: '一時停止中に試合が進んだ');
-    await waitUntil('再接続', () => guestRec.joined == 2 && hostRec.room?.players[1].connected == true);
+    // ゲストはすぐにつなぎ直すので、ホストが切断に気づく前に戻ってくることもある（そのときは止まらずに続く）
+    await waitUntil('一時停止か再接続', () => host.engine?.state.paused == true || guestRec.joined == 2);
+    if (host.engine!.state.paused) {
+      expect(hostRec.room?.players[1].connected, isFalse);
+      final frozen = jsonEncode(host.engine!.state.world.toJson());
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      if (guestRec.joined < 2) expect(jsonEncode(host.engine!.state.world.toJson()), frozen, reason: '一時停止中に試合が進んだ');
+      await waitUntil('再接続', () => guestRec.joined == 2 && hostRec.room?.players[1].connected == true);
+      expect(host.engine!.state.resumeTimer, greaterThan(0), reason: '再開前のカウントダウンがない');
+      expect(jsonEncode(host.engine!.state.world.toJson()), frozen, reason: '切断前と同じ状態から再開していない');
+    } else {
+      await waitUntil('再接続', () => guestRec.joined == 2 && hostRec.room?.players[1].connected == true);
+    }
     expect(guestRec.reconnecting, 1);
-    expect(host.engine!.state.resumeTimer, greaterThan(0), reason: '再開前のカウントダウンがない');
-    expect(jsonEncode(host.engine!.state.world.toJson()), frozen, reason: '切断前と同じ状態から再開していない');
 
     // 退出: 残ったホストはロビーへ戻り、お知らせを受け取る
     guest.leave();

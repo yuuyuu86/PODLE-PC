@@ -23,6 +23,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/sounds/
+    - assets/fonts/OFL.txt
   fonts:
     - family: Yomogi
       fonts:

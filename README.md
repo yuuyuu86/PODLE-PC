@@ -157,3 +157,11 @@ flutter test
 - `network_test.dart`: 実際の TCP（このPCの中のループバック）でホストとゲストをつなぎ、部屋コード参加（存在しない・満員も）→ 準備完了 → 試合 → 両者の状態が tick ごとに一致 → 入力の反映 → 切断で一時停止 → 自動再接続で同じ状態から再開 → 退出。部屋を閉じたときのゲスト側の終了、待機中の左右の入れかえ、UDP のお知らせで2つの PONG! がお互いを見つけること
 - `widget_test.dart`: 相手が参加すると部屋の画面が更新されること
 - `screenshot_test.dart`（任意）: `SNAPSHOT_DIR=/path/to/dir flutter test test/screenshot_test.dart` で各画面を PNG に書き出します
+
+## ライセンス
+
+Copyright (c) 2026 dev.yuta (GitHub: yuuyuu86). All rights reserved.
+
+このリポジトリのソースコード・デザイン・文章などの著作権は作者に帰属し、オープンソースのライセンスでは提供していません。配布ページ（GitHub Releases）から入手したアプリを個人で遊ぶことはできますが、複製・改変・再配布・ほかの作品への組み込みには作者の許可が必要です。詳しくは [LICENSE](LICENSE) を見てください。
+
+同梱している Yomogi フォント（SIL Open Font License 1.1）と、Flutter・各パッケージにはそれぞれのライセンスが適用されます。アプリの「設定 → ライセンス」で一覧を確認できます。
