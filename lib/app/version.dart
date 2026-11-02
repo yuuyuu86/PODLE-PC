@@ -4,7 +4,7 @@
 /// - [protocol] は、古い版と通信できなくなる変更（メッセージの意味や必須項目が変わる）をしたときだけ 1 上げる。
 ///   項目を足すだけなら上げずに、[features] に名前を足して、相手が対応しているかで出し分ける。
 abstract final class AppVersion {
-  static const app = '1.1.0';
+  static const app = '1.1.1';
   static const protocol = 1;
 
   /// この版が対応している、あとから足した機能
