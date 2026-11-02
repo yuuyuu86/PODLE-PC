@@ -32,15 +32,35 @@ void main() {
   });
 
   test('新しい版のお知らせ: 新しいときだけ知らせ、失敗しても何も出さない', () async {
-    final newer = UpdateChecker(fetch: () async => ('v9.0.0', 'https://example.com/r'));
+    final newer = UpdateChecker(fetchPolicy: () async => null, fetch: () async => ('v9.0.0', 'https://example.com/r'));
     await newer.check();
     expect((newer.latest, newer.url, newer.upToDate), ('9.0.0', 'https://example.com/r', false));
-    final same = UpdateChecker(fetch: () async => ('v${AppVersion.app}', 'x'));
+    final same = UpdateChecker(fetchPolicy: () async => null, fetch: () async => ('v${AppVersion.app}', 'x'));
     await same.check();
     expect((same.latest, same.upToDate), (null, true));
-    final broken = UpdateChecker(fetch: () async => throw const SocketException('offline'));
+    final broken = UpdateChecker(fetchPolicy: () async => null, fetch: () async => throw const SocketException('offline'));
     await broken.check();
     expect((broken.latest, broken.upToDate, broken.checking), (null, null, false));
+  });
+
+  test('強制アップデート: 最低版数より古いと遊べず、オフラインでも覚えている', () async {
+    String? saved;
+    final old = UpdateChecker(fetchPolicy: () async => ('99.0.0', 'ルールが変わりました'), fetch: () async => null, onMinVersion: (v) => saved = v);
+    await old.check();
+    expect((old.required, old.message, saved), (true, 'ルールが変わりました', '99.0.0'));
+    // オフラインで起動: 保存した最低版数で止める
+    final offline = UpdateChecker(fetchPolicy: () async => throw const SocketException('offline'), fetch: () async => null, savedMinVersion: saved);
+    await offline.check();
+    expect(offline.required, isTrue);
+    // 最低版数が今の版以下なら止めない（下げれば解除できる）
+    final ok = UpdateChecker(fetchPolicy: () async => (AppVersion.app, null), fetch: () async => null, savedMinVersion: '99.0.0');
+    await ok.check();
+    expect(ok.required, isFalse);
+  });
+
+  test('配布する update.json の最低版数は、いまの版以下（自分自身を止めない）', () {
+    final m = jsonDecode(File('update.json').readAsStringSync()) as Map;
+    expect(AppVersion.compare(m['minVersion'] as String, AppVersion.app), lessThanOrEqualTo(0));
   });
 
   test('保存データの版: 古いデータを読み込むと、いまの版として記録する', () async {

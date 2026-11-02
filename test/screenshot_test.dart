@@ -36,7 +36,7 @@ void main() {
     });
     SharedPreferences.setMockInitialValues({'playerName': 'ゆうた', 'avatar': '1.0.2.0', 'registered': true});
     final settings = await AppSettings.load();
-    final model = AppModel(settings: settings, feedback: GameFeedback(settings), updates: UpdateChecker(fetch: () async => ('v1.2.0', 'https://example.com')));
+    final model = AppModel(settings: settings, feedback: GameFeedback(settings), updates: UpdateChecker(fetchPolicy: () async => null, fetch: () async => ('v9.0.0', 'https://example.com')));
     await model.updates.check();
     tester.view.physicalSize = const Size(1200, 800);
     tester.view.devicePixelRatio = 1;
@@ -144,6 +144,13 @@ void main() {
     }
     model.go(Screen.records);
     await shot('23-records');
+    // 強制アップデートの画面（最低版数より古い）
+    model.updates
+      ..minVersion = '9.0.0'
+      ..message = '試合のルールが変わったため、古い版とは遊べなくなりました。';
+    settings.volume = 0.6; // 画面を作り直させる
+    await shot('24-update-required');
+    model.updates.minVersion = null;
     await tester.pump(const Duration(seconds: 4));
     model.keyboard.dispose();
   }, skip: dir == null);

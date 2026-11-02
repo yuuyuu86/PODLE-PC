@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../app/app_model.dart';
 import '../app/feedback.dart';
 import '../app/services.dart';
+import '../app/version.dart';
 import '../games/core/catalog.dart';
 import '../net/wire.dart';
 import '../ui/doodle.dart';
@@ -54,14 +55,17 @@ class _RootScreenState extends State<RootScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final model = Services.of(context).model;
     return ListenableBuilder(
-      listenable: Listenable.merge([model, Services.of(context).settings]),
+      listenable: Listenable.merge([model, Services.of(context).settings, model.updates]),
       builder: (context, _) {
         // const にしない: 部屋や試合の状態が変わるたびに画面を作り直す
         final settings = Services.of(context).settings;
         if (_splash) {
           return SplashScreen(onLand: () => Services.of(context).feedback.play(Sound.bounce), onDone: () => setState(() => _splash = false));
         }
-        final screen = !settings.registered
+        // 強制アップデート: 古すぎる版は、新しい版を入れるまでほかの画面へ進めない
+        final screen = model.updates.required
+            ? const UpdateRequiredScreen()
+            : !settings.registered
             ? RegisterScreen()
             : switch (model.screen) {
                 Screen.home => HomeScreen(),
@@ -85,7 +89,15 @@ class _RootScreenState extends State<RootScreen> with WidgetsBindingObserver {
               ),
             ),
             if (model.connection != null) Positioned.fill(child: ConnectionOverlay(problem: model.connection!)),
-            if (model.toast != null && model.connection == null) Positioned(top: 70, left: 0, right: 0, child: Center(child: ToastBanner(key: ValueKey(model.toast!.n), text: model.toast!.text, bad: model.toast!.bad))),
+            if (model.toast != null && model.connection == null)
+              Positioned(
+                top: 70,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: ToastBanner(key: ValueKey(model.toast!.n), text: model.toast!.text, bad: model.toast!.bad),
+                ),
+              ),
           ],
         );
       },
@@ -340,7 +352,10 @@ class ToastBanner extends StatelessWidget {
           tween: Tween(begin: 0, end: 1),
           duration: const Duration(milliseconds: 260),
           curve: Curves.easeOutBack,
-          builder: (context, k, child) => Opacity(opacity: k.clamp(0, 1), child: Transform.translate(offset: Offset(0, (1 - k) * -24), child: child)),
+          builder: (context, k, child) => Opacity(
+            opacity: k.clamp(0, 1),
+            child: Transform.translate(offset: Offset(0, (1 - k) * -24), child: child),
+          ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 640),
             child: CustomPaint(
@@ -352,10 +367,58 @@ class ToastBanner extends StatelessWidget {
                   children: [
                     Icon(bad ? Icons.error_outline_rounded : Icons.campaign_outlined, color: bad ? Palette.ink : Palette.paper),
                     const SizedBox(width: 10),
-                    Flexible(child: Text(text, style: TextStyle(fontSize: 19, color: bad ? Palette.ink : Palette.paper))),
+                    Flexible(
+                      child: Text(text, style: TextStyle(fontSize: 19, color: bad ? Palette.ink : Palette.paper)),
+                    ),
                   ],
                 ),
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 新しい版を入れるまで遊べないことを知らせる画面（強制アップデート）
+class UpdateRequiredScreen extends StatelessWidget {
+  const UpdateRequiredScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final u = Services.of(context).model.updates;
+    return DoodleScaffold(
+      showBack: false,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: DoodleBox(
+            seed: 170,
+            shadow: true,
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.system_update_alt_rounded, size: 48, color: Palette.ink),
+                const SizedBox(height: 10),
+                const Text('新しい版にしてください', style: TextStyle(fontSize: 30)),
+                const SizedBox(height: 12),
+                Text('この版（${AppVersion.app}）では、もう遊べません。${u.minVersion} 以上の版をダウンロードして、入れかえてください。設定やせいせきはそのまま引き継がれます。', textAlign: TextAlign.center, style: const TextStyle(fontSize: 18, height: 1.5)),
+                if (u.message != null) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    u.message!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 16, color: Palette.pencil, height: 1.45),
+                  ),
+                ],
+                const SizedBox(height: 22),
+                SizedBox(
+                  width: 260,
+                  child: DoodleButton(label: 'ダウンロード', icon: Icons.download_rounded, primary: true, seed: 171, onPressed: () => u.openDownloadPage(AppVersion.releasesPage)),
+                ),
+              ],
             ),
           ),
         ),

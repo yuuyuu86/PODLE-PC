@@ -128,7 +128,7 @@ enum Screen { home, create, join, nearby, records, room, match, result, howto, s
 class AppModel extends ChangeNotifier implements SessionListener {
   AppModel({required this.settings, required this.feedback, Discovery? discovery, UpdateChecker? updates})
       : discovery = discovery ?? Discovery(),
-        updates = updates ?? UpdateChecker() {
+        updates = updates ?? UpdateChecker(savedMinVersion: settings.requiredVersion, onMinVersion: (v) => settings.requiredVersion = v) {
     keyboard = GameKeyboard((k) {
       host?.setKeys(k);
       guest?.setKeys(k);

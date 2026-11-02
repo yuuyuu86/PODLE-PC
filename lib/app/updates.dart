@@ -10,11 +10,29 @@ import 'version.dart';
 /// 新しい版のお知らせ。起動時に GitHub Releases の最新版を1回だけ確かめる。
 /// インストールは利用者がダウンロードページから行う（自動では入れかえない）。
 /// オフラインや失敗したときは何も知らせない。
+///
+/// 強制アップデート: リポジトリの update.json の minVersion より古い版は、新しい版を入れるまで遊べない
+/// （[required]）。一度古いと分かった最低版数は保存しておき、オフラインで起動しても止める。
 class UpdateChecker extends ChangeNotifier {
-  UpdateChecker({this.fetch});
+  UpdateChecker({this.fetch, this.fetchPolicy, String? savedMinVersion, this.onMinVersion}) : minVersion = savedMinVersion;
 
   /// 最新版の情報を取ってくる（テストで差しかえる）。(タグ, ページの URL) を返す
   final Future<(String, String)?> Function()? fetch;
+
+  /// update.json を取ってくる（テストで差しかえる）。(最低版数, 利用者へのひとこと) を返す
+  final Future<(String, String?)?> Function()? fetchPolicy;
+
+  /// 新しい最低版数を受け取ったとき（保存するため）
+  final void Function(String)? onMinVersion;
+
+  /// この版より古いと遊べない（null は制限なし）
+  String? minVersion;
+
+  /// 止めるときに出すひとこと（update.json の message）
+  String? message;
+
+  /// 新しい版を入れるまで遊べない
+  bool get required => minVersion != null && AppVersion.compare(AppVersion.app, minVersion!) < 0;
 
   /// 自分より新しい版（なければ null）
   String? latest;
@@ -29,6 +47,13 @@ class UpdateChecker extends ChangeNotifier {
     checking = true;
     notifyListeners();
     try {
+      final p = await (fetchPolicy ?? _policyFromGitHub)().catchError((Object _) => null);
+      if (p != null) {
+        final (min, msg) = p;
+        minVersion = min;
+        message = msg;
+        onMinVersion?.call(min);
+      }
       final r = await (fetch ?? _fromGitHub)();
       if (r != null) {
         final (tag, page) = r;
@@ -42,6 +67,23 @@ class UpdateChecker extends ChangeNotifier {
     } finally {
       checking = false;
       notifyListeners();
+    }
+  }
+
+  /// main ブランチの update.json（例: {"minVersion": "1.1.1", "message": "…"}）
+  static Future<(String, String?)?> _policyFromGitHub() async {
+    final client = HttpClient()..connectionTimeout = const Duration(seconds: 5);
+    try {
+      final req = await client.getUrl(Uri.parse('https://raw.githubusercontent.com/${AppVersion.repo}/main/update.json'));
+      req.headers.set(HttpHeaders.userAgentHeader, 'PONG-PC/${AppVersion.app}');
+      final res = await req.close().timeout(const Duration(seconds: 8));
+      if (res.statusCode != 200) return null;
+      final body = jsonDecode(await res.transform(utf8.decoder).join());
+      if (body is! Map || body['minVersion'] is! String) return null;
+      final msg = body['message'];
+      return (body['minVersion'] as String, msg is String && msg.isNotEmpty ? msg : null);
+    } finally {
+      client.close(force: true);
     }
   }
 

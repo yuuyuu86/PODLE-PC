@@ -78,6 +78,10 @@ class AppSettings extends ChangeNotifier {
     return '${_nameIdeas[r.nextInt(_nameIdeas.length)]}${r.nextInt(90) + 10}';
   }
 
+  /// 強制アップデートの最低版数（最後に確かめたもの。オフラインで起動しても止めるため）
+  String? get requiredVersion => _prefs.getString('requiredVersion');
+  set requiredVersion(String? v) => v == null ? _prefs.remove('requiredVersion') : _prefs.setString('requiredVersion', v);
+
   /// 「あとで」を押した新しい版（同じ版のお知らせは出さない）
   String? get dismissedUpdate => _prefs.getString('dismissedUpdate');
   set dismissedUpdate(String? v) => _set(() => v == null ? _prefs.remove('dismissedUpdate') : _prefs.setString('dismissedUpdate', v));
