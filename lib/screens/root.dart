@@ -16,6 +16,7 @@ import 'info.dart';
 import 'match.dart';
 import 'profile.dart';
 import 'records.dart';
+import 'shop.dart';
 import 'room.dart';
 import 'setup.dart';
 
@@ -79,6 +80,9 @@ class _RootScreenState extends State<RootScreen> with WidgetsBindingObserver {
                 Screen.records => RecordsScreen(),
                 Screen.settings => SettingsScreen(),
                 Screen.profile => ProfileScreen(),
+                Screen.quests => QuestScreen(),
+                Screen.shop => ShopScreen(),
+                Screen.locker => LockerScreen(),
               };
         return Stack(
           children: [

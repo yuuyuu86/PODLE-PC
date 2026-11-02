@@ -3,8 +3,8 @@ import 'dart:math' as math;
 /// 着せ替えできるパーツの種類。
 enum AvatarPart {
   head('あたま', ['まる', 'たまご', 'しかく', 'おにぎり']),
-  face('かお', ['にこにこ', 'キリッ', 'びっくり', 'ねむい', 'ウインク']),
-  top('かみ・ぼうし', ['なし', 'ツンツン', 'キャップ', 'ハチマキ', 'リボン', 'アフロ']),
+  face('かお', ['にこにこ', 'キリッ', 'びっくり', 'ねむい', 'ウインク', 'サングラス', 'おひげ', 'ハートめ']),
+  top('かみ・ぼうし', ['なし', 'ツンツン', 'キャップ', 'ハチマキ', 'リボン', 'アフロ', 'おうかん', 'ねこみみ', 'シルクハット', 'まじょのぼうし', 'ヘッドホン', 'てんしのわ', 'おにのつの']),
   pose('ポーズ', ['かまえ', 'バンザイ', 'ピース']);
 
   const AvatarPart(this.label, this.options);
@@ -48,9 +48,25 @@ class Avatar {
     });
   }
 
-  static Avatar random([math.Random? rnd]) {
+  /// ショップで買うパーツの値段（ここにないものは最初から使える）
+  static const prices = <AvatarPart, Map<int, int>>{
+    AvatarPart.face: {5: 150, 6: 120, 7: 200},
+    AvatarPart.top: {6: 300, 7: 150, 8: 200, 9: 250, 10: 180, 11: 400, 12: 220},
+  };
+
+  static int price(AvatarPart part, int index) => prices[part]?[index] ?? 0;
+
+  /// [owns] で使えるパーツだけから選ぶ（省略時は最初から使えるものだけ）
+  static Avatar random([math.Random? rnd, bool Function(AvatarPart, int)? owns]) {
     final r = rnd ?? math.Random();
-    return Avatar({for (final p in AvatarPart.values) p: r.nextInt(p.options.length)});
+    final ok = owns ?? (p, i) => price(p, i) == 0;
+    return Avatar({
+      for (final p in AvatarPart.values)
+        p: (() {
+          final list = [for (var i = 0; i < p.options.length; i++) if (ok(p, i)) i];
+          return list[r.nextInt(list.length)];
+        })(),
+    });
   }
 
   /// 線の揺れを毎回同じにするための種

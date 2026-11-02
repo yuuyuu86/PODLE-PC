@@ -261,6 +261,30 @@ class AvatarPainter extends CustomPainter {
           p,
         );
         smile();
+      case 5: // サングラス
+        for (final e in [eyeL, eyeR]) {
+          canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center: e, width: 0.5 * r, height: 0.32 * r), Radius.circular(0.1 * r)), dotFill);
+        }
+        canvas.drawLine(eyeL + Offset(0.25 * r, 0), eyeR - Offset(0.25 * r, 0), p);
+        smile();
+      case 6: // おひげ
+        canvas.drawCircle(eyeL, dot, dotFill);
+        canvas.drawCircle(eyeR, dot, dotFill);
+        for (final s in [-1.0, 1.0]) {
+          canvas.drawArc(Rect.fromCenter(center: c + Offset(s * 0.22 * r, 0.32 * r), width: 0.44 * r, height: 0.3 * r), s < 0 ? 0 : 0, math.pi, false, _pen(1.1));
+        }
+      case 7: // ハートめ
+        for (final e in [eyeL, eyeR]) {
+          final h = 0.14 * r;
+          canvas.drawPath(
+            Path()
+              ..moveTo(e.dx, e.dy + h)
+              ..cubicTo(e.dx - 2 * h, e.dy - 0.2 * h, e.dx - 0.8 * h, e.dy - 1.6 * h, e.dx, e.dy - 0.5 * h)
+              ..cubicTo(e.dx + 0.8 * h, e.dy - 1.6 * h, e.dx + 2 * h, e.dy - 0.2 * h, e.dx, e.dy + h),
+            dotFill,
+          );
+        }
+        smile();
       default: // にこにこ
         canvas.drawCircle(eyeL, dot, dotFill);
         canvas.drawCircle(eyeR, dot, dotFill);
@@ -330,6 +354,62 @@ class AvatarPainter extends CustomPainter {
           canvas.drawPath(wing, _pen(0.7));
         }
         canvas.drawCircle(k, 0.18 * r, Sketch.fill(ink));
+      case 6: // おうかん
+        final base = c.dy - 0.75 * r;
+        final crown = Path()..moveTo(c.dx - 0.75 * r, base);
+        for (final (x, y) in [(-0.85, -0.8), (-0.4, -0.35), (0.0, -0.95), (0.4, -0.35), (0.85, -0.8), (0.75, 0.0)]) {
+          crown.lineTo(c.dx + x * r, base + y * r);
+        }
+        crown.close();
+        canvas.drawPath(crown, Sketch.fill(paper));
+        canvas.drawPath(crown, _pen(0.8));
+        for (final x in [-0.85, 0.0, 0.85]) {
+          canvas.drawCircle(Offset(c.dx + x * r, base + (x == 0 ? -0.95 : -0.8) * r), 0.12 * r, Sketch.fill(ink));
+        }
+      case 7: // ねこみみ
+        for (final s in [-1.0, 1.0]) {
+          final a = c + Offset(s * 0.35 * r, -0.94 * r);
+          final b = c + Offset(s * 0.9 * r, -0.45 * r);
+          final tip = c + Offset(s * 0.95 * r, -1.45 * r);
+          final ear = Path()
+            ..moveTo(a.dx, a.dy)
+            ..lineTo(tip.dx, tip.dy)
+            ..lineTo(b.dx, b.dy)
+            ..close();
+          canvas.drawPath(ear, Sketch.fill(ink));
+        }
+      case 8: // シルクハット
+        final brimY = c.dy - 0.7 * r;
+        final hat = Rect.fromLTRB(c.dx - 0.6 * r, brimY - 1.3 * r, c.dx + 0.6 * r, brimY);
+        canvas.drawRect(hat, Sketch.fill(ink));
+        _line(canvas, Offset(c.dx - 1.1 * r, brimY), Offset(c.dx + 1.1 * r, brimY), 95, scale: 1.4);
+        canvas.drawRect(Rect.fromLTRB(hat.left, brimY - 0.35 * r, hat.right, brimY - 0.2 * r), Sketch.fill(paper));
+      case 9: // まじょのぼうし
+        final brimY = c.dy - 0.65 * r;
+        final cone = Path()
+          ..moveTo(c.dx - 0.7 * r, brimY)
+          ..lineTo(c.dx + 0.3 * r, brimY - 1.9 * r)
+          ..lineTo(c.dx + 0.7 * r, brimY)
+          ..close();
+        canvas.drawPath(cone, Sketch.fill(ink));
+        _line(canvas, Offset(c.dx - 1.3 * r, brimY), Offset(c.dx + 1.3 * r, brimY), 96, scale: 1.4);
+      case 10: // ヘッドホン
+        canvas.drawArc(Rect.fromCircle(center: c, radius: r * 1.15), math.pi * 1.05, math.pi * 0.9, false, _pen(1.3));
+        for (final s in [-1.0, 1.0]) {
+          canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center: c + Offset(s * 1.1 * r, 0), width: 0.38 * r, height: 0.7 * r), Radius.circular(0.15 * r)), Sketch.fill(ink));
+        }
+      case 11: // てんしのわ
+        canvas.drawOval(Rect.fromCenter(center: c + Offset(0, -1.45 * r), width: 1.3 * r, height: 0.38 * r), _pen(1.1));
+      case 12: // おにのつの
+        for (final s in [-1.0, 1.0]) {
+          final horn = Path()
+            ..moveTo(c.dx + s * 0.25 * r, c.dy - 0.95 * r)
+            ..quadraticBezierTo(c.dx + s * 0.45 * r, c.dy - 1.5 * r, c.dx + s * 0.55 * r, c.dy - 1.7 * r)
+            ..lineTo(c.dx + s * 0.75 * r, c.dy - 0.7 * r)
+            ..close();
+          canvas.drawPath(horn, Sketch.fill(paper));
+          canvas.drawPath(horn, _pen(0.8));
+        }
     }
   }
 

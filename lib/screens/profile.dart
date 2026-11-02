@@ -188,10 +188,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       title: 'プレイヤー',
       onBack: () => Services.of(context).model.go(Screen.home),
       child: PageBody(
-        maxWidth: 1040,
+        maxWidth: 720,
         children: [
           LayoutBuilder(builder: (context, constraints) {
-            final largeText = MediaQuery.textScalerOf(context).scale(1) > 1.3;
             final name = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               const DoodleHeading('なまえ'),
               const SizedBox(height: 10),
@@ -208,18 +207,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 14),
               const Text('次に部屋を作る・参加するときから、相手にも表示されます。', style: TextStyle(fontSize: 15)),
             ]);
-            final appearance = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              const DoodleHeading('みため'),
-              const SizedBox(height: 12),
-              AvatarEditor(value: settings.avatar, onChanged: (a) => settings.avatar = a, horizontal: constraints.maxWidth >= 1000 && !largeText),
-            ]);
-            if (constraints.maxWidth < 760 || largeText) {
-              return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [name, const SizedBox(height: 24), appearance]);
-            }
-            return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Expanded(child: name),
-              const SizedBox(width: 32),
-              Expanded(child: appearance),
+            return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              name,
+              const SizedBox(height: 24),
+              Row(children: [
+                AvatarIcon(avatar: settings.avatar, size: 64),
+                const SizedBox(width: 14),
+                const Expanded(child: Text('見た目は「ロッカー」で変えられます。', style: TextStyle(fontSize: 16))),
+                DoodleButton(label: 'ロッカーへ', icon: Icons.checkroom_rounded, fontSize: 16, seed: 190, onPressed: () => Services.of(context).model.go(Screen.locker)),
+              ]),
             ]);
           }),
         ],

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pong_pc/avatar/avatar.dart';
 import 'package:pong_pc/app/app_model.dart';
 import 'package:pong_pc/app/records.dart';
 import 'package:pong_pc/app/updates.dart';
@@ -144,6 +145,17 @@ void main() {
     }
     model.go(Screen.records);
     await shot('23-records');
+    settings.addRecord(MatchRecord(at: DateTime.now(), game: GameKind.volley, rule: 5, opponent: 'はなこ', opponentAvatar: '2.1.4.0', myScore: 5, opponentScore: 1, won: true));
+    settings.addCoins(320);
+    model.go(Screen.quests);
+    await shot('25-quests');
+    settings.buy(AvatarPart.top, 7);
+    model.go(Screen.shop);
+    await shot('26-shop');
+    model.go(Screen.locker);
+    await shot('27-locker');
+    model.go(Screen.home);
+    await shot('28-home-coins');
     // 強制アップデートの画面（最低版数より古い）
     model.updates
       ..minVersion = '9.0.0'

@@ -16,6 +16,7 @@ import '../ui/doodle.dart';
 import '../ui/logo.dart';
 import '../ui/widgets.dart';
 import 'root.dart';
+import 'shop.dart';
 
 /// ゲーム集トップ。左に参加のしかた、真ん中に自分の棒人間、右に近くのPCとメニュー。
 class HomeScreen extends StatefulWidget {
@@ -111,6 +112,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 6),
           Text(s.settings.playerName, style: const TextStyle(fontSize: 26)),
+          const CoinBadge(),
         ],
       ),
     );
@@ -121,19 +123,33 @@ class _HomeScreenState extends State<HomeScreen> {
         const UpdateNotice(),
         const _NearbyPanel(),
         const SizedBox(height: 18),
-        for (final (i, (label, icon, screen)) in const [
-          ('あそびかた', Icons.menu_book_rounded, Screen.howto),
-          ('せいせき', Icons.emoji_events_outlined, Screen.records),
-          ('プロフィール', Icons.person_outline_rounded, Screen.profile),
-          ('設定', Icons.tune_rounded, Screen.settings),
-        ].indexed)
-          Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: SizedBox(width: 230, child: DoodleButton(label: label, icon: icon, seed: 31 + i, fontSize: 18, onPressed: () => model.go(screen))),
+        const SizedBox(height: 4),
+        Align(
+          alignment: Alignment.centerRight,
+          child: SizedBox(
+            width: 330,
+            child: Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              alignment: WrapAlignment.end,
+              children: [
+                for (final (i, (label, icon, screen)) in const [
+                  ('今日のクエスト', Icons.flag_outlined, Screen.quests),
+                  ('ショップ', Icons.storefront_outlined, Screen.shop),
+                  ('ロッカー', Icons.checkroom_rounded, Screen.locker),
+                  ('なまえ', Icons.person_outline_rounded, Screen.profile),
+                  ('せいせき', Icons.emoji_events_outlined, Screen.records),
+                  ('あそびかた', Icons.menu_book_rounded, Screen.howto),
+                  ('設定', Icons.tune_rounded, Screen.settings),
+                ].indexed)
+                  SizedBox(
+                    width: i == 0 ? 330 : 160,
+                    child: DoodleButton(label: label, icon: icon, seed: 31 + i, fontSize: 16, primary: i == 0, onPressed: () => model.go(screen)),
+                  ),
+              ],
             ),
           ),
+        ),
       ],
     );
     const logo = Column(

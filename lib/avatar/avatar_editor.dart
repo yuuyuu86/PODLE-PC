@@ -7,11 +7,14 @@ import 'avatar_painter.dart';
 
 /// 棒人間の着せ替え。パーツごとに ◀ ▶ で切り替える。
 class AvatarEditor extends StatelessWidget {
-  const AvatarEditor({super.key, required this.value, required this.onChanged, this.horizontal = false});
+  const AvatarEditor({super.key, required this.value, required this.onChanged, this.horizontal = false, this.owns});
 
   final Avatar value;
   final ValueChanged<Avatar> onChanged;
   final bool horizontal;
+
+  /// 使えるパーツ（省略時は最初から使えるものだけ）。持っていないものは飛ばす
+  final bool Function(AvatarPart, int)? owns;
 
   @override
   Widget build(BuildContext context) {
@@ -22,9 +25,9 @@ class AvatarEditor extends StatelessWidget {
       ),
     );
     final options = Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      for (final part in AvatarPart.values) _PartRow(part: part, value: value, onChanged: onChanged),
+      for (final part in AvatarPart.values) _PartRow(part: part, value: value, onChanged: onChanged, owns: owns ?? (p, i) => Avatar.price(p, i) == 0),
       const SizedBox(height: 8),
-      Align(child: DoodleButton(label: 'おまかせ', icon: Icons.casino_outlined, fontSize: 17, seed: 182, onPressed: () => onChanged(Avatar.random()))),
+      Align(child: DoodleButton(label: 'おまかせ', icon: Icons.casino_outlined, fontSize: 17, seed: 182, onPressed: () => onChanged(Avatar.random(null, owns)))),
     ]);
     if (horizontal) {
       return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Expanded(flex: 2, child: preview), const SizedBox(width: 24), Expanded(flex: 3, child: options)]);
@@ -34,15 +37,25 @@ class AvatarEditor extends StatelessWidget {
 }
 
 class _PartRow extends StatelessWidget {
-  const _PartRow({required this.part, required this.value, required this.onChanged});
+  const _PartRow({required this.part, required this.value, required this.onChanged, required this.owns});
 
   final AvatarPart part;
   final Avatar value;
   final ValueChanged<Avatar> onChanged;
+  final bool Function(AvatarPart, int) owns;
+
+  /// 持っているパーツだけを順にめぐる
+  Avatar _step(int dir) {
+    var next = value;
+    for (var n = 0; n < part.options.length; n++) {
+      next = next.withChoice(part, next[part] + dir);
+      if (owns(part, next[part])) return next;
+    }
+    return value;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final index = value[part];
     return SizedBox(
       height: 56,
       child: Row(
@@ -51,7 +64,7 @@ class _PartRow extends StatelessWidget {
           _Arrow(
             icon: Icons.chevron_left_rounded,
             label: '${part.label}を前へ',
-            onTap: () => onChanged(value.withChoice(part, index - 1)),
+            onTap: () => onChanged(_step(-1)),
           ),
           Expanded(
             child: Semantics(
@@ -70,7 +83,7 @@ class _PartRow extends StatelessWidget {
           _Arrow(
             icon: Icons.chevron_right_rounded,
             label: '${part.label}を次へ',
-            onTap: () => onChanged(value.withChoice(part, index + 1)),
+            onTap: () => onChanged(_step(1)),
           ),
         ],
       ),
