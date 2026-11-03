@@ -35,26 +35,32 @@ class MatchScreen extends StatelessWidget {
         Positioned.fill(
           child: CourtView(feed: model.feed, you: you, split: split, avatars: [_avatarOf(model, 0), _avatarOf(model, 1)]),
         ),
-        // 半分表示では、案内や得点の表示をコートの外側（ネットと反対の空いているところ）に出して、コートを隠さない
-        Positioned.fill(
-          child: LayoutBuilder(
-            builder: (context, c) {
-              // LayoutBuilder の中は大きさが変わらないと作り直されないので、表示は試合の状態の変化で作り直す
-              Widget overlays({bool side = false}) => ListenableBuilder(listenable: model.feed, builder: (context, _) => _Overlays(game: game, side: side));
-              if (!split) return overlays();
-              final k = math.min(c.maxWidth / Field.center, c.maxHeight / Field.height);
-              final free = c.maxWidth - Field.center * k;
-              if (free < 320) return overlays();
-              return Row(
-                children: [
-                  if (you == 0) SizedBox(width: free, child: overlays(side: true)),
-                  const Spacer(),
-                  if (you == 1) SizedBox(width: free, child: overlays(side: true)),
-                ],
-              );
-            },
+        // 半分表示では、コートの外側（ネットと反対の空いているところ）に遊び方を出す
+        if (split)
+          Positioned.fill(
+            child: LayoutBuilder(
+              builder: (context, c) {
+                final k = math.min(c.maxWidth / Field.center, c.maxHeight / Field.height);
+                final free = c.maxWidth - Field.center * k;
+                if (free < 300) return const SizedBox.shrink();
+                // 開始前の説明や一時停止が真ん中に出ている間は、重ならないよう隠す（開始前の説明にも操作は書いてある）
+                final guide = SizedBox(
+                  width: free,
+                  child: ListenableBuilder(
+                    listenable: model.feed,
+                    builder: (context, _) {
+                      final h = model.feed.hud;
+                      final busy = h.phase == MatchPhase.intro || h.phase == MatchPhase.over || h.paused || h.resumeCount > 0;
+                      return AnimatedOpacity(opacity: busy ? 0 : 1, duration: const Duration(milliseconds: 250), child: _SideGuide(game: game));
+                    },
+                  ),
+                );
+                return Row(children: [if (you == 0) guide, const Spacer(), if (you == 1) guide]);
+              },
+            ),
           ),
-        ),
+        // 開始前の説明・得点・一時停止は、自分の画面の真ん中に出す
+        Positioned.fill(child: ListenableBuilder(listenable: model.feed, builder: (context, _) => _Overlays(game: game))),
       ],
     );
     return Scaffold(
@@ -172,9 +178,6 @@ class _CourtPainter extends CustomPainter {
     }
     for (final b in feed.bursts) {
       b.draw(canvas, now);
-    }
-    for (final st in feed.stamps) {
-      StampBubble.draw(canvas, st.side, st.stamp, now - st.born);
     }
     if (split) _offscreenHint(canvas, size, s, k);
   }
@@ -489,7 +492,7 @@ class _ControlStrip extends StatelessWidget {
                     spacing: 18,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      for (final c in [...game.controls, const GameControl('1〜4', 'スタンプ')])
+                      for (final c in game.controls)
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -509,11 +512,8 @@ class _ControlStrip extends StatelessWidget {
 
 /// コートの上に重ねる表示: 開始前の操作説明、得点、一時停止、再開カウントダウン
 class _Overlays extends StatelessWidget {
-  const _Overlays({required this.game, this.side = false});
+  const _Overlays({required this.game});
   final GameKind game;
-
-  /// コートの外の空いたところに出している（何も出すものがなければ、操作方法などの案内を出す）
-  final bool side;
 
   @override
   Widget build(BuildContext context) {
@@ -615,68 +615,59 @@ class _Overlays extends StatelessWidget {
         ),
       );
     }
-    if (side && h.phase != MatchPhase.over) return _SideGuide(game: game);
     return const SizedBox.shrink();
   }
 }
 
-/// コートの外の空いたところに出す、試合中の案内（ルール・操作方法・スタンプ）
+/// コートの外の空いたところに出す、遊び方のカード。
+/// 勝ち方を大きく、キーは大きなキーの絵と短いことばで、上から順に読めるようにする
 class _SideGuide extends StatelessWidget {
   const _SideGuide({required this.game});
   final GameKind game;
 
   @override
   Widget build(BuildContext context) {
-    final model = Services.of(context).model;
+    final s = Services.of(context);
+    final rule = s.model.room?.ruleValue ?? game.defaultRule;
+    final keys = s.settings.keys;
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
+        constraints: const BoxConstraints(maxWidth: 380),
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              DoodleBox(
-                seed: 140,
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  DoodleHeading('ルール', size: 19),
-                  const SizedBox(height: 8),
-                  Text(game.ruleTextFor(model.room?.ruleValue ?? game.defaultRule), style: const TextStyle(fontSize: 15, height: 1.45)),
-                  const SizedBox(height: 4),
-                  Text(game.summary, style: const TextStyle(fontSize: 14, height: 1.45, color: Palette.pencil)),
-                ]),
-              ),
-              const SizedBox(height: 14),
-              DoodleBox(
-                seed: 141,
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const DoodleHeading('そうさ', size: 19),
-                  const SizedBox(height: 8),
-                  ControlsList(controls: game.controls, size: 15),
-                ]),
-              ),
-              const SizedBox(height: 14),
-              DoodleBox(
-                seed: 142,
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const DoodleHeading('スタンプ', size: 19),
-                  const SizedBox(height: 4),
-                  const Text('数字キーか、ボタンで相手に送れます', style: TextStyle(fontSize: 13, color: Palette.pencil)),
-                  const SizedBox(height: 8),
-                  Wrap(spacing: 8, runSpacing: 8, children: [
-                    for (final st in Stamp.values)
-                      ExcludeFocus(
-                        child: DoodleButton(
-                          label: '${st.index + 1}  ${st.text}',
-                          fontSize: 15,
-                          seed: 143 + st.index,
-                          onPressed: () => model.keyboard.sendStamp(st.index),
-                        ),
-                      ),
+          child: DoodleBox(
+            seed: 140,
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Text('あそびかた ・ ${game.title}', style: const TextStyle(fontSize: 22)),
+              const SizedBox(height: 12),
+              // 勝ち方
+              CustomPaint(
+                painter: SketchBorderPainter(seed: 141, fillColor: Palette.ink, strokeWidth: 2),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  child: Column(children: [
+                    Text(game == GameKind.boxing ? '$rule秒で たたかう' : '$rule点とったら 勝ち', style: const TextStyle(fontSize: 22, color: Palette.paper)),
+                    Text(game.ruleTextFor(rule), textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, height: 1.4, color: Palette.paper)),
                   ]),
-                ]),
+                ),
               ),
-            ],
+              const SizedBox(height: 18),
+              const Text('キー', style: TextStyle(fontSize: 15, color: Palette.pencil)),
+              const SizedBox(height: 6),
+              for (final c in game.controls)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                    // キーの絵は1行のまま（長いものは小さくする）
+                    SizedBox(width: 132, child: Align(alignment: Alignment.centerLeft, child: FittedBox(fit: BoxFit.scaleDown, child: Keycap(keys.describe(c.key), size: 20)))),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(c.label, style: const TextStyle(fontSize: 17, height: 1.3))),
+                  ]),
+                ),
+              const SizedBox(height: 10),
+              Text(game.summary, style: const TextStyle(fontSize: 13, height: 1.5, color: Palette.pencil)),
+            ]),
           ),
         ),
       ),

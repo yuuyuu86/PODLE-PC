@@ -245,7 +245,7 @@ class Keycap extends StatelessWidget {
       painter: SketchBorderPainter(seed: label.length + 40, strokeWidth: 1.8),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(9, 2, 13, 6),
-        child: Text(label, style: TextStyle(fontSize: size, color: Palette.ink, height: 1.2)),
+        child: Text(label, maxLines: 1, softWrap: false, style: TextStyle(fontSize: size, color: Palette.ink, height: 1.2)),
       ),
     );
   }
