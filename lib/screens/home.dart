@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app/quests.dart';
 import '../app/app_model.dart';
 import '../app/feedback.dart';
 import '../avatar/avatar.dart';
@@ -112,7 +113,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 6),
           Text(s.settings.playerName, style: const TextStyle(fontSize: 26)),
-          const CoinBadge(),
+          const SizedBox(height: 4),
+          const CoinBadge(fontSize: 26),
         ],
       ),
     );
@@ -127,6 +129,8 @@ class _HomeScreenState extends State<HomeScreen> {
         // 「近くの PONG!」と同じ横幅に、2列で並べる（いちばん上の「今日のクエスト」だけ横いっぱい）
         LayoutBuilder(builder: (context, c) {
           final half = (c.maxWidth - 10) / 2;
+          final now = DateTime.now();
+          final claimable = !s.settings.questsLocked(DailyQuests.dayKey(now)) && DailyQuests.hasClaimable(s.settings.records, s.settings.claimedQuests(DailyQuests.dayKey(now)), now);
           return Wrap(
             spacing: 10,
             runSpacing: 10,
@@ -141,7 +145,19 @@ class _HomeScreenState extends State<HomeScreen> {
               ].indexed)
                 SizedBox(
                   width: i == 0 || i == 5 ? c.maxWidth : half,
-                  child: DoodleButton(label: label, icon: icon, seed: 31 + i, fontSize: 16, primary: i == 0, onPressed: () => model.go(screen)),
+                  child: Stack(clipBehavior: Clip.none, fit: StackFit.passthrough, children: [
+                    DoodleButton(
+                      // 受け取れるクエストがあれば、ボタンに書いて丸い印も付ける
+                      label: i == 0 && claimable ? '$label  受け取れます！' : label,
+                      icon: icon,
+                      seed: 31 + i,
+                      fontSize: 16,
+                      primary: i == 0,
+                      onPressed: () => model.go(screen),
+                    ),
+                    if (i == 0 && claimable)
+                      const Positioned(right: -6, top: -6, child: _Dot()),
+                  ]),
                 ),
             ],
           );
@@ -152,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         PongLogo(fontSize: 64),
-        Text('PC 2台で あそぶ 1たい1', style: TextStyle(fontSize: 18)),
+        Text('PC 2台で あそぶ 1対1', style: TextStyle(fontSize: 18)),
       ],
     );
     return DoodleScaffold(
@@ -200,6 +216,19 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 /// 左に並ぶ大きな札（参加のしかた）。少し傾けて、カーソルを乗せると持ち上がる。
+/// 知らせの丸い印
+class _Dot extends StatelessWidget {
+  const _Dot();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 20,
+    height: 20,
+    decoration: BoxDecoration(color: Palette.paper, shape: BoxShape.circle, border: Border.all(color: Palette.ink, width: 2.5)),
+    child: const Center(child: Text('!', style: TextStyle(fontSize: 13, height: 1, color: Palette.ink))),
+  );
+}
+
 class ModeCard extends StatefulWidget {
   const ModeCard({super.key, required this.label, required this.caption, required this.icon, required this.onPressed, this.primary = false, this.seed = 1, this.tilt = 0, this.badge});
 

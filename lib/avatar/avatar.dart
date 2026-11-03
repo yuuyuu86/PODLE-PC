@@ -50,8 +50,9 @@ class Avatar {
 
   /// ショップで買うパーツの値段（ここにないものは最初から使える）
   static const prices = <AvatarPart, Map<int, int>>{
-    AvatarPart.face: {5: 150, 6: 120, 7: 200},
-    AvatarPart.top: {6: 300, 7: 150, 8: 200, 9: 250, 10: 180, 11: 400, 12: 220},
+    // 1日に全部クリアして最大 200 コイン。安いものは 2 日ほど、一番高いものは 1 週間ほどかかる値段にする
+    AvatarPart.face: {5: 400, 6: 350, 7: 600},
+    AvatarPart.top: {6: 1000, 7: 350, 8: 600, 9: 800, 10: 500, 11: 1400, 12: 700},
   };
 
   static int price(AvatarPart part, int index) => prices[part]?[index] ?? 0;

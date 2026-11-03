@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../app/app_model.dart';
 import '../app/feedback.dart';
 import '../app/keyboard.dart';
+import '../app/changelog.dart';
 import '../app/version.dart';
 import '../app/services.dart';
 import '../games/core/catalog.dart';
@@ -80,6 +81,10 @@ class _GameRules extends StatelessWidget {
           const SizedBox(height: 6),
           Text(game.ruleText, style: const TextStyle(fontSize: 16, color: Palette.pencil)),
           const SizedBox(height: 14),
+          const DoodleHeading('タイミング（JUST!）', size: 18),
+          const SizedBox(height: 6),
+          Text(_timingText(game), style: const TextStyle(fontSize: 16, height: 1.45)),
+          const SizedBox(height: 14),
           const DoodleHeading('そうさ（2台とも同じキー）', size: 18),
           const SizedBox(height: 8),
           ControlsList(controls: game.controls, size: 16),
@@ -88,6 +93,13 @@ class _GameRules extends StatelessWidget {
     );
   }
 }
+
+/// 攻撃のタイミング判定の説明（JUST! / はやい / おそい / ちかい）
+String _timingText(GameKind game) => switch (game) {
+  GameKind.boxing => '相手にぎりぎり届く距離でパンチを当てると「JUST!」で、ダメージが大きくなります。近づきすぎて打つと「ちかい」で、ダメージが小さくなります。',
+  GameKind.fencing => '相手の突きが届く直前にパリィすると「JUST!」で、相手が長く止まります。早すぎると「はやい」で、止まる時間が短くなります。突きは相手との距離がちょうどいいと「JUST!」です。',
+  _ => 'ボールが来る直前に打つと「JUST!」で、速い球を返せます。早すぎ（「はやい」）・遅すぎ（「おそい」）だと、弱い球になります。音と文字で分かります。',
+};
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -167,7 +179,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('PONG! ${AppVersion.app}', style: const TextStyle(fontSize: 21)),
+                              MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                child: GestureDetector(
+                                  onTap: () => showChangelog(context),
+                                  child: Text.rich(
+                                    TextSpan(
+                                      children: [
+                                        TextSpan(text: 'PONG! ${AppVersion.app}', style: const TextStyle(fontSize: 21)),
+                                        const TextSpan(
+                                          text: '  更新内容を見る ›',
+                                          style: TextStyle(fontSize: 15, color: Palette.pencil, decoration: TextDecoration.underline),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
                               const Text('© 2026 dev.yuta', style: TextStyle(fontSize: 14, color: Palette.pencil)),
                               if (status.isNotEmpty) Text(status, style: const TextStyle(fontSize: 15, color: Palette.pencil)),
                             ],
@@ -183,18 +211,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: SizedBox(
-                      width: 200,
-                      child: DoodleButton(
-                        label: 'ライセンス',
-                        icon: Icons.description_outlined,
-                        fontSize: 16,
-                        seed: 94,
-                        onPressed: () => showLicensePage(context: context, applicationName: 'PONG!', applicationVersion: AppVersion.app, applicationLegalese: '© 2026 dev.yuta. All rights reserved.'),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      SizedBox(
+                        width: 200,
+                        child: DoodleButton(label: '更新内容', icon: Icons.history_rounded, fontSize: 16, seed: 95, onPressed: () => showChangelog(context)),
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      SizedBox(
+                        width: 200,
+                        child: DoodleButton(
+                          label: 'ライセンス',
+                          icon: Icons.description_outlined,
+                          fontSize: 16,
+                          seed: 94,
+                          onPressed: () =>
+                              showLicensePage(context: context, applicationName: 'PONG!', applicationVersion: AppVersion.app, applicationLegalese: '© 2026 dev.yuta. All rights reserved.'),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               );
@@ -303,6 +339,119 @@ class _KeySettingsState extends State<_KeySettings> {
           },
         ),
       ),
+    );
+  }
+}
+
+/// 設定の版番号から開く、版ごとの更新内容（CHANGELOG.md を同梱して読む）。
+/// ライセンス一覧と同じく、左に版の一覧、右に選んだ版の変更内容を出す。
+Future<void> showChangelog(BuildContext context) async {
+  final text = await rootBundle.loadString('CHANGELOG.md');
+  if (!context.mounted) return;
+  final entries = parseChangelog(text);
+  await showDialog<void>(
+    context: context,
+    barrierColor: const Color(0x66000000),
+    builder: (ctx) => Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: 900, maxHeight: MediaQuery.sizeOf(ctx).height * 0.85),
+        child: DoodleBox(shadow: true, padding: const EdgeInsets.all(22), child: _Changelog(entries: entries)),
+      ),
+    ),
+  );
+}
+
+class _Changelog extends StatefulWidget {
+  const _Changelog({required this.entries});
+  final List<ChangelogEntry> entries;
+
+  @override
+  State<_Changelog> createState() => _ChangelogState();
+}
+
+class _ChangelogState extends State<_Changelog> {
+  int _sel = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final entries = widget.entries;
+    final e = entries.isEmpty ? null : entries[_sel];
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const DoodleHeading('更新内容', size: 26),
+        const SizedBox(height: 12),
+        Flexible(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 左: 版の一覧
+              SizedBox(
+                width: 210,
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (final (i, v) in entries.indexed)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            onTap: () => setState(() => _sel = i),
+                            child: CustomPaint(
+                              painter: SketchBorderPainter(seed: 120 + i, dashed: i != _sel, fillColor: i == _sel ? Palette.ink : Palette.paper, strokeWidth: 2),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(v.version + (v.version == AppVersion.app ? '  いまの版' : ''), style: TextStyle(fontSize: 20, color: i == _sel ? Palette.paper : Palette.ink)),
+                                    if (v.date.isNotEmpty) Text(v.date, style: TextStyle(fontSize: 13, color: i == _sel ? Palette.paperShade : Palette.pencil)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 18),
+              // 右: 選んだ版の変更内容
+              Expanded(
+                child: e == null
+                    ? const SizedBox()
+                    : ListView(
+                        key: ValueKey(_sel),
+                        shrinkWrap: true,
+                        children: [
+                          Text('PONG! ${e.version}', style: const TextStyle(fontSize: 24)),
+                          if (e.date.isNotEmpty) Text(e.date, style: const TextStyle(fontSize: 14, color: Palette.pencil)),
+                          for (final t in e.intro) Padding(padding: const EdgeInsets.only(top: 8), child: Text(t, style: const TextStyle(fontSize: 16, height: 1.4))),
+                          for (final (title, items) in e.sections) ...[
+                            if (title.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 12, bottom: 2), child: DoodleHeading(title, size: 18)),
+                            for (final it in items)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 6, top: 4),
+                                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                  const Text('・', style: TextStyle(fontSize: 16, height: 1.4)),
+                                  Expanded(child: Text(it, style: const TextStyle(fontSize: 16, height: 1.4))),
+                                ]),
+                              ),
+                          ],
+                        ],
+                      ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        Align(alignment: Alignment.centerRight, child: SizedBox(width: 160, child: DoodleButton(label: 'とじる', fontSize: 18, seed: 7, onPressed: () => Navigator.pop(context)))),
+      ],
     );
   }
 }

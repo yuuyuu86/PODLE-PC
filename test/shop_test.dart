@@ -19,7 +19,7 @@ void main() {
   test('コインが足りないと買えず、足りれば1回だけ買える', () {
     expect(s.owns(AvatarPart.top, 6), isFalse);
     expect(s.buy(AvatarPart.top, 6), isFalse);
-    s.addCoins(350);
+    s.addCoins(1050);
     expect(s.buy(AvatarPart.top, 6), isTrue);
     expect(s.coins, 50);
     expect(s.owns(AvatarPart.top, 6), isTrue);
@@ -57,9 +57,44 @@ void main() {
     final all = [rec(now), rec(now, won: false), rec(DateTime(2026, 11, 1, 23))];
     final today = DailyQuests.today(all, now);
     expect(today.length, 2);
-    final quests = DailyQuests.forDay(now);
-    expect(quests.firstWhere((q) => q.id == 'win').done(today), isTrue);
-    expect(quests.firstWhere((q) => q.id == 'play').progress(today), 2);
+    final win = Quest(id: 'win', title: '', goal: 1, level: QuestLevel.normal, count: (t) => t.where((r) => r.won == true).length);
+    expect(win.done(today), isTrue);
+    final play = Quest(id: 'play', title: '', goal: 3, level: QuestLevel.normal, count: (t) => t.length);
+    expect(play.progress(today), 2);
+  });
+
+  test('クエストは毎日 かんたん・ふつう・むずかしい が1つずつで、ほうびは難しさに比例する', () {
+    for (var d = 0; d < 60; d++) {
+      final qs = DailyQuests.forDay(DateTime(2026, 11, 1).add(Duration(days: d)));
+      expect(qs.map((q) => q.level), QuestLevel.values);
+      expect(qs.map((q) => q.id).toSet().length, 3);
+      for (final q in qs) {
+        expect(q.reward, q.level.stars * QuestLevel.coinPerStar);
+      }
+    }
+    expect(DailyQuests.maxPerDay, 200);
+  });
+
+  test('3つ全部受け取ると、おまけを受け取れる', () {
+    final now = DateTime.now();
+    final day = DailyQuests.dayKey(now);
+    final qs = DailyQuests.forDay(now);
+    expect(DailyQuests.hasClaimable(const [], s.claimedQuests(day), now), isFalse);
+    for (final q in qs) {
+      s.claimQuest(day, q.id, q.reward);
+    }
+    expect(DailyQuests.hasClaimable(const [], s.claimedQuests(day), now), isTrue);
+    s.claimQuest(day, DailyQuests.bonusId, DailyQuests.bonus);
+    expect(s.coins, DailyQuests.maxPerDay);
+    expect(DailyQuests.hasClaimable(const [], s.claimedQuests(day), now), isFalse);
+  });
+
+  test('値段は、1日の最大コインで 2日〜1週間ほどかかる', () {
+    for (final e in Avatar.prices.values) {
+      for (final p in e.values) {
+        expect(p / DailyQuests.maxPerDay, inInclusiveRange(1.5, 7.0));
+      }
+    }
   });
 
   test('値段のついたパーツはすべて実在する', () {
@@ -71,7 +106,7 @@ void main() {
   });
 
   test('ふつうに増えたコインは、次に起動しても残る', () async {
-    s.addCoins(120);
+    s.addCoins(350);
     s.buy(AvatarPart.face, 6);
     final again = await AppSettings.load();
     expect(again.tampered, isFalse);
@@ -80,7 +115,7 @@ void main() {
   });
 
   test('保存データのコインを書きかえると、コインと買ったものが消える', () async {
-    s.addCoins(500);
+    s.addCoins(1400);
     s.buy(AvatarPart.top, 11);
     s.avatar = s.avatar.withChoice(AvatarPart.top, 11);
     final prefs = await SharedPreferences.getInstance();

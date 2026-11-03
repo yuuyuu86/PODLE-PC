@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../app/quests.dart';
 import '../app/app_model.dart';
 import '../app/services.dart';
 import '../avatar/avatar.dart';
@@ -21,8 +22,29 @@ import 'root.dart';
 /// 試合画面: 上にスコア、真ん中にコート、下に操作の案内。
 /// どの競技も、2台を横に並べるとコートがつながるよう、左の選手のPCにはネットまでの左半分、
 /// 右の選手のPCにはネットから右半分を映す（ネットが2台の境目に来る）。
-class MatchScreen extends StatelessWidget {
+class MatchScreen extends StatefulWidget {
   const MatchScreen({super.key});
+
+  @override
+  State<MatchScreen> createState() => _MatchScreenState();
+}
+
+class _MatchScreenState extends State<MatchScreen> {
+  /// コートの横に遊び方の案内が出ているか（出ているときは、下の操作の帯を出さない。同じことが2か所に出るため）
+  final _sideGuide = ValueNotifier(false);
+
+  @override
+  void dispose() {
+    _sideGuide.dispose();
+    super.dispose();
+  }
+
+  void _setSideGuide(bool v) {
+    if (_sideGuide.value == v) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _sideGuide.value = v;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +64,7 @@ class MatchScreen extends StatelessWidget {
               builder: (context, c) {
                 final k = math.min(c.maxWidth / Field.center, c.maxHeight / Field.height);
                 final free = c.maxWidth - Field.center * k;
+                _setSideGuide(free >= 300);
                 if (free < 300) return const SizedBox.shrink();
                 // 開始前の説明や一時停止が真ん中に出ている間は、重ならないよう隠す（開始前の説明にも操作は書いてある）
                 final guide = SizedBox(
@@ -91,8 +114,10 @@ class MatchScreen extends StatelessWidget {
                             ),
                           ),
                   ),
-                  const SizedBox(height: 8),
-                  _ControlStrip(game: game),
+                  ValueListenableBuilder(
+                    valueListenable: _sideGuide,
+                    builder: (context, side, _) => side ? const SizedBox.shrink() : Padding(padding: const EdgeInsets.only(top: 8), child: _ControlStrip(game: game)),
+                  ),
                 ],
               ),
             ),
@@ -547,7 +572,7 @@ class _Overlays extends StatelessWidget {
           const SizedBox(height: 14),
           SizedBox(
             width: 260,
-            child: DoodleButton(label: '退出してタイトルへ', seed: 124, onPressed: model.leaveRoom),
+            child: DoodleButton(label: '退出してホームへ', seed: 124, onPressed: model.leaveRoom),
           ),
         ] else
           const Text('通信を確認しています…', style: TextStyle(fontSize: 18)),
@@ -700,7 +725,7 @@ class ResultScreen extends StatelessWidget {
           Text('相手が「もう一度」を押すのを待っています', style: TextStyle(fontSize: 17)),
         ],
       ),
-      (_, _, false, true) => const Text('●  あいては もう一度 やりたがっています', style: TextStyle(fontSize: 17)),
+      (_, _, false, true) => const Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.waving_hand_rounded, size: 20, color: Palette.ink), SizedBox(width: 8), Text('相手は「もう一度」を押しました。あなたも押すと始まります', style: TextStyle(fontSize: 17))]),
       _ => const SizedBox.shrink(),
     };
     return DoodleScaffold(
@@ -732,7 +757,7 @@ class ResultScreen extends StatelessWidget {
                 children: [
                   SizedBox(
                     width: 220,
-                    child: DoodleButton(label: 'タイトルへ', seed: 171, onPressed: model.leaveRoom),
+                    child: DoodleButton(label: 'ホームへ', seed: 171, onPressed: model.leaveRoom),
                   ),
                   const SizedBox(width: 18),
                   SizedBox(
@@ -749,9 +774,45 @@ class ResultScreen extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               SizedBox(height: 32, child: Center(child: status)),
+              const _QuestNews(),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// この試合で達成したクエストを結果画面で知らせる（コインは「今日のクエスト」で受け取る）
+class _QuestNews extends StatelessWidget {
+  const _QuestNews();
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = Services.of(context).settings;
+    final now = DateTime.now();
+    final today = DailyQuests.today(settings.records, now)..sort((a, b) => a.at.compareTo(b.at));
+    if (today.isEmpty) return const SizedBox.shrink();
+    final before = today.sublist(0, today.length - 1);
+    final claimed = settings.claimedQuests(DailyQuests.dayKey(now));
+    final news = [for (final q in DailyQuests.forDay(now)) if (q.done(today) && !q.done(before) && !claimed.contains(q.id)) q];
+    if (news.isEmpty) return const SizedBox.shrink();
+    final coins = news.fold(0, (a, q) => a + q.reward);
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: DoodleBox(
+        seed: 175,
+        shadow: true,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.flag_rounded, size: 24, color: Palette.ink),
+            const SizedBox(width: 8),
+            Text('クエスト達成！  +$coinsコイン', style: const TextStyle(fontSize: 22)),
+          ]),
+          for (final q in news) Text('「${q.title}」', style: const TextStyle(fontSize: 16)),
+          const Text('ホームの「今日のクエスト」で受け取れます', style: TextStyle(fontSize: 14, color: Palette.pencil)),
+        ]),
       ),
     );
   }

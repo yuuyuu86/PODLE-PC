@@ -11,6 +11,7 @@ import 'app/feedback.dart';
 import 'app/services.dart';
 import 'app/settings.dart';
 import 'screens/root.dart';
+import 'ui/cursor.dart';
 import 'ui/doodle.dart';
 
 Future<void> main() async {
@@ -68,7 +69,7 @@ class PongApp extends StatelessWidget {
           textSelectionTheme: const TextSelectionThemeData(cursorColor: Palette.ink),
           sliderTheme: const SliderThemeData(activeTrackColor: Palette.ink, thumbColor: Palette.ink, inactiveTrackColor: Palette.faint),
         ),
-        builder: (context, child) => UiScale(child: child!),
+        builder: (context, child) => DoodleCursor(child: UiScale(child: child!)),
         home: RootScreen(splash: splash),
       ),
     );

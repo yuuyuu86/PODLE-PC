@@ -76,8 +76,9 @@ class _RoomScreenState extends State<RoomScreen> {
           child: SizedBox(
             width: 300,
             child: DoodleButton(
-              label: me.ready ? '準備OK！（取り消す）' : '準備OK',
-              icon: me.ready ? Icons.check_rounded : Icons.directions_run_rounded,
+              // 押すと何が起きるかを書く（準備OK の状態は上のプレイヤー欄のはんこで見せる）
+              label: me.ready ? '準備をやめる' : '準備OK にする',
+              icon: me.ready ? Icons.undo_rounded : Icons.check_rounded,
               primary: !me.ready,
               seed: 90,
               onPressed: opp.present && opp.connected ? () => model.setReady(!me.ready) : null,
@@ -92,8 +93,6 @@ class _RoomScreenState extends State<RoomScreen> {
             Flexible(child: Text(_status(r), style: const TextStyle(fontSize: 18))),
           ],
         ),
-        const SizedBox(height: 16),
-        DoodleBox(seed: 88, dashed: true, child: ControlsList(controls: r.game.controls, size: 15)),
       ],
     );
     return DoodleScaffold(
@@ -131,7 +130,7 @@ class _RoomScreenState extends State<RoomScreen> {
     final me = r.me, opp = r.opponent;
     if (!opp.present) return r.you == 0 ? '相手の参加を待っています…' : '相手を待っています…';
     if (!opp.connected) return '相手の通信が切れています。つなぎ直すのを待っています…';
-    if (!me.ready) return 'そろいました！「準備OK」を押してください';
+    if (!me.ready) return 'そろいました！「準備OK にする」を押してください';
     if (!opp.ready) return '相手の準備を待っています…';
     return 'まもなく開始！';
   }
@@ -158,7 +157,7 @@ class CodeDisplay extends StatelessWidget {
   }
 }
 
-/// 2人の参加状態と左右の割り当て（●接続中 / ○まだいない / ×切断）
+/// 2人の参加状態と左右の割り当て（準備OK は黒いはんこ、まだのときは点線の枠）
 class PlayersBox extends StatelessWidget {
   const PlayersBox({super.key, required this.room});
   final RoomInfo room;
@@ -185,13 +184,14 @@ class PlayersBox extends StatelessWidget {
   Widget _row(int side) {
     final p = room.players[side];
     final role = side == 0 ? 'P1 左' : 'P2 右';
-    final status = !p.present
-        ? 'まだいません'
+    // 準備OK は黒くぬったはんこ、まだのときは点線の枠で、ひと目で分かるようにする
+    final (status, icon, done) = !p.present
+        ? ('まだいません', Icons.hourglass_empty_rounded, false)
         : !p.connected
-            ? '通信が切れています'
+            ? ('通信が切れています', Icons.wifi_off_rounded, false)
             : p.ready
-                ? '準備完了'
-                : '待機中';
+                ? ('準備OK！', Icons.check_circle_rounded, true)
+                : ('まだ準備中', Icons.more_horiz_rounded, false);
     return Row(
       children: [
         SizedBox(
@@ -209,7 +209,23 @@ class PlayersBox extends StatelessWidget {
             ],
           ),
         ),
-        SizedBox(width: 170, child: StatusLine(state: !p.present ? StatusKind.waiting : !p.connected ? StatusKind.bad : StatusKind.ok, text: status)),
+        SizedBox(
+          width: 180,
+          child: Semantics(
+            label: status,
+            child: CustomPaint(
+              painter: SketchBorderPainter(seed: 87 + side, dashed: !done, fillColor: done ? Palette.ink : Palette.paper, strokeWidth: 2),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Icon(icon, size: 20, color: done ? Palette.paper : Palette.pencil),
+                  const SizedBox(width: 6),
+                  Flexible(child: Text(status, maxLines: 1, overflow: TextOverflow.fade, softWrap: false, style: TextStyle(fontSize: done ? 18 : 16, color: done ? Palette.paper : Palette.pencil))),
+                ]),
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }

@@ -17,6 +17,7 @@ import 'package:pong_pc/games/core/catalog.dart';
 import 'package:pong_pc/games/core/common.dart';
 import 'package:pong_pc/games/core/match.dart';
 import 'package:pong_pc/main.dart';
+import 'package:pong_pc/screens/info.dart';
 import 'package:pong_pc/net/wire.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -76,6 +77,11 @@ void main() {
     ]);
     model.sessionRoom(info);
     await shot('03-room');
+    model.sessionRoom(const RoomInfo(code: 'KQTE', game: GameKind.volley, phase: RoomPhase.lobby, you: 0, players: [
+      PlayerInfo(present: true, name: 'ゆうた', avatar: '1.0.2.0', connected: true, ready: true),
+      PlayerInfo(present: true, name: 'はなこ', avatar: '2.1.4.0', connected: true),
+    ]));
+    await shot('03-room-ready');
     for (final (i, game) in GameKind.values.indexed) {
       final e = MatchEngine(game, firstServer: 0)..state.stage = i;
       info = RoomInfo(code: 'KQTE', game: game, phase: RoomPhase.match, you: 0, players: [
@@ -142,6 +148,10 @@ void main() {
     await shot('20-result');
     model.go(Screen.settings);
     await shot('21-settings');
+    showChangelog(tester.element(find.text('ライセンス')));
+    await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 200)));
+    await shot('22-changelog');
+    Navigator.of(tester.element(find.text('とじる'))).pop();
     for (final (i, won) in [true, false, true].indexed) {
       settings.addRecord(MatchRecord(at: DateTime(2026, 10, 30, 12, i), game: GameKind.values[i], rule: GameKind.values[i].defaultRule, opponent: 'はなこ', opponentAvatar: '2.1.4.0', myScore: won ? 5 : 2, opponentScore: won ? 3 : 5, won: won));
     }

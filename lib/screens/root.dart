@@ -208,7 +208,7 @@ class ConnectionOverlay extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: 18),
-                  DoodleButton(label: problem.isFinal ? 'タイトルへ戻る' : 'あきらめてタイトルへ', primary: problem.isFinal, seed: 141, onPressed: model.leaveRoom),
+                  DoodleButton(label: problem.isFinal ? 'ホームへ戻る' : 'あきらめてホームへ', primary: problem.isFinal, seed: 141, onPressed: model.leaveRoom),
                 ],
               ),
             ),

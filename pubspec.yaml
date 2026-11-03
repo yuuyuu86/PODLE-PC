@@ -24,6 +24,7 @@ flutter:
   assets:
     - assets/sounds/
     - assets/fonts/OFL.txt
+    - CHANGELOG.md
   fonts:
     - family: Yomogi
       fonts:

@@ -86,7 +86,8 @@ class AvatarPainter extends CustomPainter {
     final faceAt = onigiri ? head + Offset(0, 0.12 * r) : head;
     if (avatar[AvatarPart.top] == 5) _afro(canvas, head, r);
     _head(canvas, head, r);
-    _face(canvas, faceAt + (look ?? Offset.zero) * (0.28 * r), onigiri ? r * 0.85 : r);
+    // マウスを目で追うときは目だけ動かし、口などはそのまま
+    _face(canvas, faceAt, onigiri ? r * 0.85 : r, eyeShift: (look ?? Offset.zero) * (0.28 * r));
     _top(canvas, crown, crownR);
     if (mood == AvatarMood.win && !bust) _sparkles(canvas, head, r);
   }
@@ -212,9 +213,9 @@ class AvatarPainter extends CustomPainter {
     canvas.drawPath(path, _pen());
   }
 
-  void _face(Canvas canvas, Offset c, double r) {
-    final eyeL = c + Offset(-0.4 * r, -0.08 * r);
-    final eyeR = c + Offset(0.4 * r, -0.08 * r);
+  void _face(Canvas canvas, Offset c, double r, {Offset eyeShift = Offset.zero}) {
+    final eyeL = c + eyeShift + Offset(-0.4 * r, -0.08 * r);
+    final eyeR = c + eyeShift + Offset(0.4 * r, -0.08 * r);
     final dot = math.max(1.6, 0.11 * r);
     final p = _pen(0.75);
     final dotFill = Sketch.fill(ink);

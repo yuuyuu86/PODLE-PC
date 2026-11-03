@@ -31,7 +31,7 @@ class CoinBadge extends StatelessWidget {
   }
 }
 
-/// 今日のクエスト。達成したら「受け取る」でコインがもらえる
+/// 今日のクエスト。達成したら「受け取る」でコインがもらえる。3つ全部受け取るとおまけがもらえる
 class QuestScreen extends StatelessWidget {
   const QuestScreen({super.key});
 
@@ -50,53 +50,110 @@ class QuestScreen extends StatelessWidget {
           final today = DailyQuests.today(s.settings.records, now);
           final claimed = s.settings.claimedQuests(day);
           final locked = s.settings.questsLocked(day);
+          final quests = DailyQuests.forDay(now);
+          final left = DailyQuests.untilReset(now);
+          void claim(String id, int reward) {
+            // 画面を開いたまま日付が変わったら、きのうのクエストは受け取らない
+            if (DailyQuests.dayKey(DateTime.now()) == day) s.settings.claimQuest(day, id, reward);
+          }
+
+          Widget card(int i, {required String title, required String sub, required Widget? level, required double ratio, required bool done, required bool got, required VoidCallback onClaim, bool dark = false}) {
+            final fg = dark ? Palette.paper : Palette.ink;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: CustomPaint(
+                painter: SketchBorderPainter(seed: 300 + i, fillColor: dark ? Palette.ink : Palette.paper, dashed: got),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(children: [
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        ?level,
+                        Text(title, style: TextStyle(fontSize: 21, color: got ? Palette.pencil : fg, decoration: got ? TextDecoration.lineThrough : null)),
+                        const SizedBox(height: 6),
+                        // 進み具合のバー
+                        SizedBox(
+                          height: 12,
+                          child: CustomPaint(painter: _Bar(ratio, dark), size: const Size(double.infinity, 12)),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(sub, style: TextStyle(fontSize: 15, color: dark ? Palette.paperShade : Palette.pencil)),
+                      ]),
+                    ),
+                    const SizedBox(width: 16),
+                    SizedBox(
+                      width: 150,
+                      child: got
+                          ? const Text('受け取りずみ', textAlign: TextAlign.center, style: TextStyle(fontSize: 17, color: Palette.pencil))
+                          : DoodleButton(label: '受け取る', primary: done && !locked && !dark, fontSize: 17, seed: 310 + i, onPressed: done && !locked ? onClaim : null),
+                    ),
+                  ]),
+                ),
+              ),
+            );
+          }
+
+          final allGot = quests.every((q) => claimed.contains(q.id));
+          final gotCount = quests.where((q) => claimed.contains(q.id)).length;
           return PageBody(maxWidth: 760, children: [
-            const Text('試合をしてクエストを達成すると、コインがもらえます。\nクエストは毎日かわります。', style: TextStyle(fontSize: 17, height: 1.5)),
+            Text('試合をしてクエストを達成すると、コインがもらえます。むずかしいほど、たくさんもらえます。\n新しいクエストまで あと ${left.inHours}時間${left.inMinutes % 60}分（夜中の0時に入れかわります）', style: const TextStyle(fontSize: 17, height: 1.5)),
             if (locked) ...[
               const SizedBox(height: 12),
               const StatusLine(state: StatusKind.bad, text: '保存データが書きかえられていたため、今日のクエストは受け取れません。あしたからまた受け取れます。'),
             ],
             const SizedBox(height: 20),
-            for (final (i, q) in DailyQuests.forDay(now).indexed)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 14),
-                child: DoodleBox(
-                  seed: 300 + i,
-                  child: Row(children: [
-                    Expanded(
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(q.title, style: const TextStyle(fontSize: 21)),
-                        const SizedBox(height: 4),
-                        Text('${q.progress(today)} / ${q.goal}　・　ほうび ${q.reward}コイン', style: const TextStyle(fontSize: 15, color: Palette.pencil)),
-                      ]),
-                    ),
-                    SizedBox(
-                      width: 150,
-                      child: claimed.contains(q.id)
-                          ? const Text('受け取りずみ', textAlign: TextAlign.center, style: TextStyle(fontSize: 17, color: Palette.pencil))
-                          : DoodleButton(
-                              label: '受け取る',
-                              primary: q.done(today) && !locked,
-                              fontSize: 17,
-                              seed: 310 + i,
-                              onPressed: q.done(today) && !locked
-                                  ? () {
-                                      // 画面を開いたまま日付が変わったら、きのうのクエストは受け取らない
-                                      final at = DateTime.now();
-                                      if (DailyQuests.dayKey(at) == day) s.settings.claimQuest(day, q.id, q.reward);
-                                      (context as Element).markNeedsBuild();
-                                    }
-                                  : null,
-                            ),
-                    ),
-                  ]),
-                ),
+            for (final (i, q) in quests.indexed)
+              card(
+                i,
+                title: q.title,
+                level: Row(children: [
+                  for (var k = 0; k < 4; k++) Icon(k < q.level.stars ? Icons.star_rounded : Icons.star_outline_rounded, size: 18, color: k < q.level.stars ? Palette.ink : Palette.faint),
+                  const SizedBox(width: 6),
+                  Text(q.level.label, style: const TextStyle(fontSize: 14, color: Palette.pencil)),
+                ]),
+                sub: '${q.progress(today)} / ${q.goal}　・　ほうび ${q.reward}コイン',
+                ratio: q.progress(today) / q.goal,
+                done: q.done(today),
+                got: claimed.contains(q.id),
+                onClaim: () => claim(q.id, q.reward),
               ),
+            const SizedBox(height: 6),
+            card(
+              9,
+              dark: !claimed.contains(DailyQuests.bonusId),
+              title: 'ぜんぶクリアのおまけ',
+              level: null,
+              sub: '3つのクエストを全部受け取る（$gotCount / 3）　・　ほうび ${DailyQuests.bonus}コイン',
+              ratio: gotCount / 3,
+              done: allGot,
+              got: claimed.contains(DailyQuests.bonusId),
+              onClaim: () => claim(DailyQuests.bonusId, DailyQuests.bonus),
+            ),
           ]);
         },
       ),
     );
   }
+}
+
+class _Bar extends CustomPainter {
+  _Bar(this.ratio, this.dark);
+  final double ratio;
+  final bool dark;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final fg = dark ? Palette.paper : Palette.ink;
+    final r = RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(6));
+    canvas.drawRRect(r, Paint()
+      ..color = fg
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.6);
+    if (ratio > 0) canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(0, 0, size.width * ratio.clamp(0, 1), size.height), const Radius.circular(6)), Paint()..color = fg);
+  }
+
+  @override
+  bool shouldRepaint(_Bar old) => old.ratio != ratio || old.dark != dark;
 }
 
 /// コスチュームを買う
@@ -134,14 +191,17 @@ class ShopScreen extends StatelessWidget {
                       if (s.settings.owns(part, i))
                         const SizedBox(height: 44, child: Center(child: Text('持っている', style: TextStyle(fontSize: 17, color: Palette.pencil))))
                       else
+                        // 押すと全身のプレビューと確認を出す（ワンクリックでは買わない）
                         DoodleButton(
                           label: '${Avatar.price(part, i)}コイン',
                           icon: Icons.monetization_on_outlined,
                           fontSize: 17,
                           seed: 340 + n,
                           primary: s.settings.coins >= Avatar.price(part, i),
-                          onPressed: s.settings.coins >= Avatar.price(part, i) ? () => s.settings.buy(part, i) : null,
+                          onPressed: () => _confirmBuy(context, part, i),
                         ),
+                      if (!s.settings.owns(part, i) && s.settings.coins < Avatar.price(part, i))
+                        Padding(padding: const EdgeInsets.only(top: 4), child: Text('あと ${Avatar.price(part, i) - s.settings.coins}コイン', style: const TextStyle(fontSize: 14, color: Palette.pencil))),
                     ]),
                   ),
                 ),
@@ -151,6 +211,60 @@ class ShopScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 全身のプレビューを見せて、買うかどうかを確かめる。コインが足りなければ見るだけ
+Future<void> _confirmBuy(BuildContext context, AvatarPart part, int i) async {
+  final s = Services.of(context).settings;
+  final price = Avatar.price(part, i);
+  final enough = s.coins >= price;
+  final look = s.avatar.withChoice(part, i);
+  await showDialog<void>(
+    context: context,
+    barrierColor: const Color(0x66000000),
+    builder: (ctx) => Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 460),
+        child: DoodleBox(
+          shadow: true,
+          padding: const EdgeInsets.all(22),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Center(child: AvatarView(avatar: look, size: 240)),
+            const SizedBox(height: 8),
+            Text(part.options[i], textAlign: TextAlign.center, style: const TextStyle(fontSize: 26)),
+            const SizedBox(height: 4),
+            Text(
+              enough ? '$priceコインで買いますか？（のこり ${s.coins - price}コイン）' : '$priceコイン。あと ${price - s.coins}コイン たりません。\n「今日のクエスト」でコインをためよう！',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 18, height: 1.4),
+            ),
+            const SizedBox(height: 18),
+            Row(children: [
+              Expanded(child: DoodleButton(label: enough ? 'やめる' : 'とじる', fontSize: 19, seed: 6, onPressed: () => Navigator.pop(ctx))),
+              if (enough) ...[
+                const SizedBox(width: 14),
+                Expanded(
+                  child: DoodleButton(
+                    label: '買う',
+                    icon: Icons.monetization_on_outlined,
+                    primary: true,
+                    fontSize: 19,
+                    seed: 5,
+                    onPressed: () {
+                      s.buy(part, i);
+                      Navigator.pop(ctx);
+                    },
+                  ),
+                ),
+              ],
+            ]),
+          ]),
+        ),
+      ),
+    ),
+  );
 }
 
 /// 持っているコスチュームで着せ替える。左で部位とパーツを選び、右に大きく映す
@@ -272,7 +386,7 @@ class _LockerTile extends StatelessWidget {
                   if (!owned)
                     Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                       const Icon(Icons.lock_outline_rounded, size: 14, color: Palette.pencil),
-                      Text(' $price', style: const TextStyle(fontSize: 13, color: Palette.pencil)),
+                      Flexible(child: Text(' $price ショップ', maxLines: 1, softWrap: false, overflow: TextOverflow.fade, style: const TextStyle(fontSize: 13, color: Palette.pencil))),
                     ])
                   else if (equipped)
                     Text('きている', style: TextStyle(fontSize: 13, color: fg))
