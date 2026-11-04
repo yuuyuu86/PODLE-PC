@@ -181,7 +181,7 @@ class ConnectionOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final model = Services.of(context).model;
-    // 画面の外側（Scaffold の外）に重ねるので、Material で包んでアプリと同じ文字（Yomogi）にする
+    // 画面の外側（Scaffold の外）に重ねるので、Material で包んでアプリと同じ文字（Yusei Magic）にする
     return Material(
       type: MaterialType.transparency,
       child: ColoredBox(

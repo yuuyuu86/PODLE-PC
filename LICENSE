@@ -26,8 +26,8 @@ PONG! for PC（以下「本ソフトウェア」）のソースコード、画�
 本ソフトウェアには、次の第三者の著作物が含まれます。これらにはそれぞれのライセンスが
 適用され、上記の制限は及びません。
 
-  - Yomogi フォント（assets/fonts/Yomogi-Regular.ttf）
-    Copyright 2020 The Yomogi Project Authors (https://github.com/satsuyako/YomogiFont)
+  - Yusei Magic フォント（assets/fonts/YuseiMagic-Regular.ttf）
+    Copyright 2020 The Yusei Magic Project Authors (https://github.com/tanukifont/YuseiMagic)
     SIL Open Font License, Version 1.1（全文: assets/fonts/OFL.txt）
 
   - Flutter と、pubspec.yaml に記載したパッケージ（shared_preferences、audioplayers、

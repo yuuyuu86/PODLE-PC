@@ -5,7 +5,7 @@ Flutter で作ったデスクトップアプリで、**Mac（Apple シリコン 
 Mac 同士・Windows 同士・Mac と Windows の組み合わせで対戦できます。
 
 デザインはスマホ版 PONG! と共通です（`lib/ui/doodle.dart`・`lib/ui/widgets.dart`・`lib/avatar/` をスマホ版からそのまま使用）。
-紙・墨・鉛筆の色、Yomogi フォント、手描きの枠と影、●○× の状態表示、着せ替えできる棒人間のアバター、ロゴ。
+紙・墨・鉛筆の色、Yusei Magic フォント、手描きの枠と影、●○× の状態表示、着せ替えできる棒人間のアバター、ロゴ。
 
 | タイトル | 特徴 | 勝敗 |
 | --- | --- | --- |
@@ -148,7 +148,7 @@ lib/
   games/volley|badminton|fencing|boxing/   競技ごとのルールと描画
   net/                   wire（メッセージ）、link（TCP）、discovery（UDP で近くのPCを探す）、sessions（ホスト / ゲスト）
   screens/               画面（ホーム・対戦準備・部屋・試合と結果・あそびかた・設定・せいせき）
-assets/                  Yomogi フォント（OFL）、効果音
+assets/                  Yusei Magic フォント（OFL）、効果音
 macos/ windows/          各OSの起動部分（ウィンドウの大きさ、アイコン、Mac のネットワーク権限）
 tool/                    Mac 版のビルドスクリプトと lipo の不具合よけ
 test/                    テスト
@@ -178,4 +178,4 @@ Copyright (c) 2026 dev.yuta (GitHub: yuuyuu86). All rights reserved.
 
 このリポジトリのソースコード・デザイン・文章などの著作権は作者に帰属し、オープンソースのライセンスでは提供していません。配布ページ（GitHub Releases）から入手したアプリを個人で遊ぶことはできますが、複製・改変・再配布・ほかの作品への組み込みには作者の許可が必要です。詳しくは [LICENSE](LICENSE) を見てください。
 
-同梱している Yomogi フォント（SIL Open Font License 1.1）と、Flutter・各パッケージにはそれぞれのライセンスが適用されます。アプリの「設定 → ライセンス」で一覧を確認できます。
+同梱している Yusei Magic フォント（SIL Open Font License 1.1）と、Flutter・各パッケージにはそれぞれのライセンスが適用されます。アプリの「設定 → ライセンス」で一覧を確認できます。

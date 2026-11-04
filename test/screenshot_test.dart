@@ -31,7 +31,7 @@ void main() {
 
   testWidgets('画面を書き出す', (tester) async {
     await tester.runAsync(() async {
-      await _loadFont('Yomogi', 'assets/fonts/Yomogi-Regular.ttf');
+      await _loadFont('YuseiMagic', 'assets/fonts/YuseiMagic-Regular.ttf');
       final root = Platform.environment['FLUTTER_ROOT'] ?? '';
       final icons = '$root/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf';
       if (File(icons).existsSync()) await _loadFont('MaterialIcons', icons);

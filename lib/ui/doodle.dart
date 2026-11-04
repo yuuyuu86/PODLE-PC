@@ -12,7 +12,7 @@ class Palette {
   static const faint = Color(0x331B1B1B);
 }
 
-const kFontFamily = 'Yomogi';
+const kFontFamily = 'YuseiMagic';
 
 class Sketch {
   /// 少し揺れた直線。seed を固定すれば毎フレーム同じ形になるのでチラつかない。

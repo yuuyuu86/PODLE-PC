@@ -26,6 +26,6 @@ flutter:
     - assets/fonts/OFL.txt
     - CHANGELOG.md
   fonts:
-    - family: Yomogi
+    - family: YuseiMagic
       fonts:
-        - asset: assets/fonts/Yomogi-Regular.ttf
+        - asset: assets/fonts/YuseiMagic-Regular.ttf

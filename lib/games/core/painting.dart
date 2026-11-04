@@ -105,7 +105,7 @@ void crossHatch(Canvas c, Path clip, Rect r, {double gap = 6, double width = 1, 
 
 final _textCache = <String, TextPainter>{};
 
-/// Yomogi で文字を描く。anchor は (0.5, 0.5) で中央。
+/// アプリの手書き文字で文字を描く。anchor は (0.5, 0.5) で中央。
 void drawText(Canvas c, String s, Offset at, {double size = 20, Color color = Palette.ink, Offset anchor = const Offset(0.5, 0.5)}) {
   final key = '$s|$size|${color.toARGB32()}';
   final tp = _textCache[key] ??= (TextPainter(

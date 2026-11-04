@@ -16,9 +16,9 @@ import 'ui/doodle.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // 設定 → ライセンス に、同梱フォント（Yomogi, SIL OFL 1.1）のライセンスも出す
+  // 設定 → ライセンス に、同梱フォント（Yusei Magic, SIL OFL 1.1）のライセンスも出す
   LicenseRegistry.addLicense(() async* {
-    yield LicenseEntryWithLineBreaks(['Yomogi'], await rootBundle.loadString('assets/fonts/OFL.txt'));
+    yield LicenseEntryWithLineBreaks(['Yusei Magic'], await rootBundle.loadString('assets/fonts/OFL.txt'));
   });
   final settings = await AppSettings.load();
   final feedback = GameFeedback(settings);
@@ -29,7 +29,7 @@ Future<void> main() async {
   runApp(PongApp(settings: settings, feedback: feedback, model: model));
 }
 
-/// テーマはスマホ版 PONG! と同じ（紙・墨・Yomogi）
+/// テーマはスマホ版 PONG! と同じ（紙・墨・手書き文字）
 class PongApp extends StatelessWidget {
   const PongApp({super.key, required this.settings, required this.feedback, required this.model, this.splash = true});
 
