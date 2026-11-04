@@ -56,7 +56,7 @@ class _LogoPainter extends CustomPainter {
     final dot = Offset(left + text.width + 6 * k + r, baseline - r);
     final stemTop = Offset(dot.dx + 1.5 * k, top + fs * 0.14);
     final stemBottom = Offset(dot.dx, dot.dy - r - fs * 0.12);
-    Sketch.strokeTwice(canvas, (s) => Sketch.line(stemTop, stemBottom, seed: s, wobble: 0.8 * k), Sketch.pen(fs * 0.08), seed: 4);
+    Sketch.strokeTwice(canvas, (s) => Sketch.line(stemTop, stemBottom, seed: s, wobble: 0.8 * k), Sketch.pen(fs * 0.12), seed: 4);
     // 静止時もボールを置いた点はくぼみ（影）で示す
     canvas.drawOval(Rect.fromCenter(center: dot + Offset(0, r * 0.95), width: r * 1.8, height: r * 0.45), Sketch.fill(Palette.faint));
 
@@ -84,7 +84,7 @@ class _LogoPainter extends CustomPainter {
       ball = ball - Offset(0, fs * 0.32 * (1 - u) * (math.sin(u * math.pi * 2)).abs());
     }
     canvas.drawCircle(ball, r, Sketch.fill(Colors.white));
-    canvas.drawPath(Sketch.circle(ball, r, seed: 2), Sketch.pen(2.6 * k));
+    canvas.drawPath(Sketch.circle(ball, r, seed: 2), Sketch.pen(4 * k));
   }
 
   @override
@@ -92,43 +92,44 @@ class _LogoPainter extends CustomPainter {
 }
 
 /// アプリアイコン。手描きの「P」が主役で、右下に小さなボール。
+/// アプリのアイコン: 紙のカードに手書きの「P!」。「!」の点はボール（ゲーム内のロゴと同じ考え方）。
+/// [fullBleed] は iOS 用（角丸と影は OS がつけるので、四角いっぱいに紙を敷く）。
+/// 文字にアプリのフォントを使うので、書き出す前に読み込んでおく（tool/app_icon_test.dart）。
 class AppIconPainter extends CustomPainter {
-  const AppIconPainter();
+  const AppIconPainter({this.fullBleed = false});
+  final bool fullBleed;
 
   @override
   void paint(Canvas canvas, Size size) {
     final s = size.shortestSide;
-    Offset u(double x, double y) => Offset(x * s, y * s);
-    // macOS のアイコン枠に合わせて少し内側に描く
-    final card = Rect.fromLTRB(0.1 * s, 0.1 * s, 0.88 * s, 0.88 * s);
-    final rr = RRect.fromRectAndRadius(card, Radius.circular(0.17 * s));
-    canvas.drawRRect(rr.shift(u(0.018, 0.022)), Sketch.fill(Palette.ink));
-    canvas.drawRRect(rr, Sketch.fill(Palette.paper));
-    canvas.drawRRect(rr, Sketch.pen(0.022 * s));
-
-    final pen = Sketch.pen(0.075 * s);
-    // 縦棒
-    Sketch.strokeTwice(canvas, (seed) => Sketch.line(u(0.35, 0.25), u(0.34, 0.76), seed: seed, wobble: 0.004 * s), pen, seed: 3);
-    // ふくらみ: 棒の上から右へ回って棒の中ほどへ戻る
-    Path bowl(int seed) {
-      final rnd = math.Random(seed);
-      double j() => (rnd.nextDouble() * 2 - 1) * 0.008;
-      return Path()
-        ..moveTo(0.35 * s, 0.25 * s)
-        ..cubicTo((0.6 + j()) * s, (0.2 + j()) * s, (0.71 + j()) * s, (0.3 + j()) * s, (0.66 + j()) * s, (0.42 + j()) * s)
-        ..cubicTo((0.62 + j()) * s, (0.53 + j()) * s, (0.47 + j()) * s, (0.54 + j()) * s, (0.33 + j()) * s, (0.52 + j()) * s);
+    if (fullBleed) {
+      canvas.drawRect(Offset.zero & size, Sketch.fill(Palette.paper));
+      // 余白を詰めて、カードの中身と同じ配置にする
+      canvas.translate(-0.12 * s, -0.12 * s);
+      canvas.scale(1 / 0.78);
+    } else {
+      // macOS のアイコン枠に合わせて少し内側に描く
+      final card = Rect.fromLTRB(0.1 * s, 0.1 * s, 0.88 * s, 0.88 * s);
+      final rr = RRect.fromRectAndRadius(card, Radius.circular(0.17 * s));
+      canvas.drawRRect(rr.shift(Offset(0.018 * s, 0.022 * s)), Sketch.fill(Palette.ink));
+      canvas.drawRRect(rr, Sketch.fill(Palette.paper));
+      canvas.drawRRect(rr, Sketch.pen(0.022 * s));
     }
-
-    Sketch.strokeTwice(canvas, bowl, pen, seed: 5);
-
-    final ball = u(0.67, 0.7);
+    final p = TextPainter(
+      text: TextSpan(text: 'P', style: TextStyle(fontFamily: kFontFamily, fontSize: 0.62 * s, color: Palette.ink, height: 1)),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    p.paint(canvas, Offset(0.39 * s - p.width / 2, 0.5 * s - p.height / 2));
+    // 「!」の棒（手描き）と、点のボール
+    Sketch.strokeTwice(canvas, (seed) => Sketch.line(Offset(0.686 * s, 0.26 * s), Offset(0.68 * s, 0.6 * s), seed: seed, wobble: 0.004 * s), Sketch.pen(0.075 * s), seed: 4);
+    final ball = Offset(0.68 * s, 0.71 * s);
     final r = 0.06 * s;
     canvas.drawCircle(ball, r, Sketch.fill(Colors.white));
     canvas.drawPath(Sketch.circle(ball, r, seed: 2, wobble: 0.04), Sketch.pen(0.022 * s));
   }
 
   @override
-  bool shouldRepaint(covariant AppIconPainter old) => false;
+  bool shouldRepaint(covariant AppIconPainter old) => old.fullBleed != fullBleed;
 }
 
 /// 起動時のスプラッシュ。ボールが画面の外から飛んできてロゴの「！」の点に着地する。
