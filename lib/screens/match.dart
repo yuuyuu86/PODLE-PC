@@ -18,6 +18,9 @@ import '../games/rally/rally.dart';
 import '../ui/doodle.dart';
 import '../ui/logo.dart';
 import '../ui/widgets.dart';
+import '../main.dart';
+import '../net/screen.dart';
+import '../net/wire.dart';
 import 'root.dart';
 
 /// 試合画面: 上にスコア、真ん中にコート、下に操作の案内。
@@ -56,14 +59,14 @@ class _MatchScreenState extends State<MatchScreen> {
     final court = Stack(
       children: [
         Positioned.fill(
-          child: CourtView(feed: model.feed, you: you, split: split, avatars: [_avatarOf(model, 0), _avatarOf(model, 1)]),
+          child: CourtView(feed: model.feed, you: you, split: split, avatars: [_avatarOf(model, 0), _avatarOf(model, 1)], model: model),
         ),
         // 半分表示では、コートの外側（ネットと反対の空いているところ）に遊び方を出す
         if (split)
           Positioned.fill(
             child: LayoutBuilder(
               builder: (context, c) {
-                final k = math.min(c.maxWidth / Field.center, c.maxHeight / Field.height);
+                final k = CourtView.fitScale(context, model, c.biggest);
                 final free = c.maxWidth - Field.center * k;
                 _setSideGuide(free >= 300);
                 if (free < 300) return const SizedBox.shrink();
@@ -131,7 +134,24 @@ class _MatchScreenState extends State<MatchScreen> {
 
 /// コート。60fps でホストから届いた最新の状態を描く。
 class CourtView extends StatelessWidget {
-  const CourtView({super.key, required this.feed, required this.you, this.split = false, this.avatars});
+  const CourtView({super.key, required this.feed, required this.you, this.split = false, this.avatars, this.model});
+
+  /// 2台の画面の大きさをそろえるのに使う（なければ自分の画面いっぱい）
+  final AppModel? model;
+
+  /// 画面全体の拡大率（[UiScale]）。コートの大きさをウィンドウのポイントで比べるために使う
+  static double uiScale(BuildContext context) {
+    final v = View.of(context);
+    return UiScale.of(v.physicalSize / v.devicePixelRatio);
+  }
+
+  /// 半分表示で使う縮尺: 自分の画面いっぱいの大きさと、2台でそろえた大きさの小さい方
+  static double fitScale(BuildContext context, AppModel? model, Size size) {
+    final self = math.min(size.width / Field.center, size.height / Field.height);
+    final common = model?.commonFit();
+    if (common == null) return self;
+    return math.min(self, common / uiScale(context));
+  }
 
   /// 選手の見た目（左・右）
   final List<Avatar>? avatars;
@@ -144,23 +164,36 @@ class CourtView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final m = model;
     return Semantics(
       label: '試合のコート',
       child: ClipRect(
-        child: FrameClock(
-          builder: (context, time) => CustomPaint(
-            size: Size.infinite,
-            painter: _CourtPainter(feed, you, time, split: split, avatars: avatars),
-          ),
-        ),
+        child: LayoutBuilder(builder: (context, c) {
+          if (m != null && split && c.biggest.isFinite) {
+            // 自分の画面でコートを描ける大きさを、相手に知らせる
+            final ui = uiScale(context);
+            final self = math.min(c.maxWidth / Field.center, c.maxHeight / Field.height);
+            ScreenSize.mmPerPoint().then((mm) => m.setFit(CourtFit(self * ui, mm)));
+          }
+          final k = m == null || !split ? null : fitScale(context, m, c.biggest);
+          return FrameClock(
+            builder: (context, time) => CustomPaint(
+              size: Size.infinite,
+              painter: _CourtPainter(feed, you, time, split: split, avatars: avatars, fitK: k),
+            ),
+          );
+        }),
       ),
     );
   }
 }
 
 class _CourtPainter extends CustomPainter {
-  _CourtPainter(this.feed, this.you, this.time, {this.split = false, this.avatars}) : super(repaint: time);
+  _CourtPainter(this.feed, this.you, this.time, {this.split = false, this.avatars, this.fitK}) : super(repaint: time);
   final List<Avatar>? avatars;
+
+  /// 2台でそろえた縮尺（なければ画面いっぱい）
+  final double? fitK;
 
   final MatchFeed feed;
   final int you;
@@ -175,7 +208,7 @@ class _CourtPainter extends CustomPainter {
     if (split) {
       // 半分（幅 480）を、高さが収まる範囲でできるだけ大きく映す。ネットは画面の境目側の端、
       // 地面は画面の下から同じ距離に置くので、2台の画面の大きさが近ければ地面の高さと縮尺がそろう。
-      k = math.min(size.width / Field.center, size.height / Field.height);
+      k = math.min(fitK ?? double.infinity, math.min(size.width / Field.center, size.height / Field.height));
       final tx = you == 0 ? size.width - Field.center * k : -Field.center * k;
       canvas
         ..translate(tx, size.height - Field.height * k)

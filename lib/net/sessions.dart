@@ -53,6 +53,9 @@ class _Guest {
 
   /// 相手の版が対応している、あとから足した機能（古い版は送ってこない）
   Set<String> features = const {};
+
+  /// 相手のPCでコートを描ける大きさ
+  CourtFit? fit;
 }
 
 class HostSession {
@@ -108,6 +111,9 @@ class HostSession {
     // 通信の版が違う相手は入れない（pv を送ってこない 1.1.0 より前の版は 1）
     final pv = m['pv'];
     if ((pv is num ? pv.toInt() : 1) != AppVersion.protocol) return _refuse(link, 'version');
+    // あとから足した競技（綱引き・すもう）は、それを知らない古い版では開けないので断る
+    final f = {for (final v in (m['f'] as List?) ?? const []) '$v'};
+    if (game.newer && !f.contains('newGames')) return _refuse(link, 'version');
     if (m['code'] != code) return _refuse(link, 'not_found');
     final g = _guest;
     if (token != null && g != null && g.token == token) {
@@ -173,6 +179,9 @@ class HostSession {
         _checkStart();
       case 'swap':
         swapSides();
+      case 'fit':
+        g.fit = CourtFit.fromJson(m['fit']);
+        broadcastRoom();
       case 'skip':
         engine?.skipPractice(1 - hostSide);
       case 'rematch':
@@ -241,6 +250,15 @@ class HostSession {
 
   /// 練習をおわる（2人そろったら本番）
   void skipPractice() => engine?.skipPractice(hostSide);
+
+  CourtFit? _myFit;
+
+  /// 自分のPCでコートを描ける大きさ（変わったら相手にも知らせる）
+  void setFit(CourtFit f) {
+    if (f.near(_myFit)) return;
+    _myFit = f;
+    broadcastRoom();
+  }
 
   void setKeys(KeyState k) {
     _myPress.baseline(k);
@@ -353,8 +371,8 @@ class HostSession {
   /// [forHost] なら自分（部屋を作った人）向け、そうでなければ相手向け
   RoomInfo roomInfo({required bool forHost}) {
     final g = _guest;
-    final hostP = PlayerInfo(present: true, name: _me.name, avatar: _me.avatar, connected: true, ready: _myReady, rematch: _myRematch);
-    final guestP = g == null ? PlayerInfo.empty : PlayerInfo(present: true, name: g.name, avatar: g.avatar, connected: g.connected, ready: g.ready, rematch: g.rematch);
+    final hostP = PlayerInfo(present: true, name: _me.name, avatar: _me.avatar, connected: true, ready: _myReady, rematch: _myRematch, fit: _myFit);
+    final guestP = g == null ? PlayerInfo.empty : PlayerInfo(present: true, name: g.name, avatar: g.avatar, connected: g.connected, ready: g.ready, rematch: g.rematch, fit: g.fit);
     return RoomInfo(
       code: code,
       game: game,
@@ -438,6 +456,8 @@ class GuestSession {
         _lostAt = null;
         listener.sessionJoined(resumed: m['resumed'] == true);
         _link?.send({'t': 'keys', 'k': _keys.toJson()});
+        final f = _fit;
+        if (f != null) _link?.send({'t': 'fit', 'fit': f.toJson()});
       case 'refused':
         final first = _token == null;
         _end();
@@ -506,6 +526,15 @@ class GuestSession {
   void swapSides() => _link?.send(const {'t': 'swap'});
   void rematch() => _link?.send(const {'t': 'rematch'});
   void skipPractice() => _link?.send(const {'t': 'skip'});
+
+  CourtFit? _fit;
+
+  /// 自分のPCでコートを描ける大きさを、部屋を作った人に知らせる（つなぎ直したときも送り直す）
+  void setFit(CourtFit f) {
+    if (f.near(_fit)) return;
+    _fit = f;
+    _link?.send({'t': 'fit', 'fit': f.toJson()});
+  }
 
   /// 通信が切れた状況を作る（テスト用）
   void simulateDrop() => _link?.close();

@@ -99,7 +99,7 @@ class SumoRules extends SportRules {
           ..timer = fwd < 0 ? tSlap : tThrust
           ..hit = false
           ..actBuf = 0;
-        events.add(GameEvent(fwd < 0 ? 'slap' : 'thrust', side: i));
+        events.add(GameEvent('swing', side: i));
       } else if (!free && r.timer <= 0) {
         if (r.state == SumoState.thrust) {
           r
@@ -167,13 +167,12 @@ class SumoRules extends SportRules {
 
     if (a.x < ringMin) {
       events.add(GameEvent('out', side: 0, x: a.x, y: Field.ground - 40));
-      return PointResult(1, b.state == SumoState.stagger ? 'はたき込み' : '押し出し', landX: a.x);
+      return PointResult(1, a.state == SumoState.stagger ? 'はたき込み' : '押し出し', landX: a.x);
     }
     if (b.x > ringMax) {
       events.add(GameEvent('out', side: 1, x: b.x, y: Field.ground - 40));
-      return PointResult(0, a.state == SumoState.stagger ? 'はたき込み' : '押し出し', landX: b.x);
+      return PointResult(0, b.state == SumoState.stagger ? 'はたき込み' : '押し出し', landX: b.x);
     }
-    // つんのめって前へ出すぎ、相手の後ろの土俵から出ることもある（相手を越えられないので実際は押し出し）
     return null;
   }
 }

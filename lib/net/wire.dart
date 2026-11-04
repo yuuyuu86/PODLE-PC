@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -14,7 +16,7 @@ typedef Msg = Map<String, Object?>;
 enum RoomPhase { lobby, match, result }
 
 class PlayerInfo {
-  const PlayerInfo({required this.present, this.name = '', this.avatar = '', this.connected = false, this.ready = false, this.rematch = false});
+  const PlayerInfo({required this.present, this.name = '', this.avatar = '', this.connected = false, this.ready = false, this.rematch = false, this.fit});
 
   static const empty = PlayerInfo(present: false);
 
@@ -25,9 +27,12 @@ class PlayerInfo {
   final bool ready;
   final bool rematch;
 
+  /// このPCでコートを描ける大きさ（古い版は送ってこない）
+  final CourtFit? fit;
+
   Avatar get look => Avatar.decode(avatar);
 
-  Msg toJson() => {'p': present, 'n': name, 'a': avatar, 'c': connected, 'r': ready, 'rm': rematch};
+  Msg toJson() => {'p': present, 'n': name, 'a': avatar, 'c': connected, 'r': ready, 'rm': rematch, if (fit != null) 'fit': fit!.toJson()};
 
   static PlayerInfo fromJson(Msg m) => PlayerInfo(
         present: m['p'] == true,
@@ -36,7 +41,36 @@ class PlayerInfo {
         connected: m['c'] == true,
         ready: m['r'] == true,
         rematch: m['rm'] == true,
+        fit: CourtFit.fromJson(m['fit']),
       );
+}
+
+/// コートを描ける大きさ。[k] はコート1単位あたりの画面のポイント数（ウィンドウの論理ピクセル）、
+/// [mm] は画面の1ポイントが何ミリか（分からなければ null）。
+class CourtFit {
+  const CourtFit(this.k, this.mm);
+  final double k;
+  final double? mm;
+
+  Msg toJson() => {'k': k, if (mm != null) 'mm': mm};
+
+  static CourtFit? fromJson(Object? v) {
+    if (v is! Map || v['k'] is! num) return null;
+    return CourtFit((v['k'] as num).toDouble(), (v['mm'] as num?)?.toDouble());
+  }
+
+  /// 2台で同じ大きさに見えるよう、自分が使う縮尺（ポイント）を決める。
+  /// 2台とも実寸が分かれば実寸の小さい方に、分からなければポイントの小さい方に合わせる
+  static double common(CourtFit me, CourtFit? other) {
+    if (other == null) return me.k;
+    final a = me.mm, b = other.mm;
+    if (a != null && b != null && a > 0 && b > 0) {
+      return (math.min(me.k * a, other.k * b) / a).clamp(0.0, me.k);
+    }
+    return math.min(me.k, other.k);
+  }
+
+  bool near(CourtFit? o) => o != null && (o.k - k).abs() < 0.01 && (o.mm ?? 0) == (mm ?? 0);
 }
 
 /// 部屋の状態（待機画面・結果画面の表示に使う）

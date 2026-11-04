@@ -327,6 +327,22 @@ class AppModel extends ChangeNotifier implements SessionListener {
     guest?.swapSides();
   }
 
+  /// このPCでコートを描ける大きさ（相手に知らせ、2台で小さい方にそろえる）
+  CourtFit? myFit;
+
+  void setFit(CourtFit f) {
+    myFit = f;
+    host?.setFit(f);
+    guest?.setFit(f);
+  }
+
+  /// 2台でそろえたコートの縮尺（このPCのポイント）。相手が古い版なら自分の画面いっぱい
+  double? commonFit() {
+    final me = myFit;
+    if (me == null) return null;
+    return CourtFit.common(me, room?.opponent.fit);
+  }
+
   /// 練習をおわる
   void skipPractice() {
     host?.skipPractice();

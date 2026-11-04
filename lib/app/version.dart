@@ -11,7 +11,8 @@ abstract final class AppVersion {
   /// - rule: 部屋を作るときのルール選択
   /// - swap: 待機中の左右の入れかえ
   /// - practice: 試合の前の練習
-  static const features = ['rule', 'swap', 'practice'];
+  /// - newGames: 綱引き・すもう
+  static const features = ['rule', 'swap', 'practice', 'newGames'];
 
   /// GitHub のリポジトリ（新しい版のお知らせとダウンロード先）
   static const repo = 'yuuyuu86/PODLE-PC';

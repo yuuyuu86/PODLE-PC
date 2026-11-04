@@ -43,11 +43,11 @@ class GameFeedback {
       return;
     }
     switch (type) {
-      case 'serve' || 'bump' || 'toss' || 'drive' || 'drop' || 'clear' || 'swing' || 'lunge' || 'feint':
+      case 'serve' || 'bump' || 'toss' || 'drive' || 'drop' || 'clear' || 'swing' || 'lunge' || 'feint' || 'pull':
         play(Sound.hit, gain: 0.7);
-      case 'spike' || 'smash' || 'punch' || 'counter' || 'touche':
+      case 'spike' || 'smash' || 'punch' || 'counter' || 'touche' || 'thrust' || 'slap':
         play(Sound.hit);
-      case 'net' || 'land' || 'block' || 'parry' || 'clash' || 'guard':
+      case 'net' || 'land' || 'block' || 'parry' || 'clash' || 'guard' || 'out':
         play(Sound.bounce, gain: 0.8);
       case 'vblock':
         play(Sound.just);

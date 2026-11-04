@@ -115,6 +115,9 @@ enum GameKind {
         sumo => const SumoPainter(),
       };
 
+  /// あとから足した競技（古い版の相手とは遊べない）
+  bool get newer => this == tug || this == sumo;
+
   /// 2台を並べたとき、コートを半分ずつ映すか（いまは全競技。2台の画面がつながって1つのコートになる）
   bool get splitCourt => true;
 

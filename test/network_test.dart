@@ -96,6 +96,11 @@ void main() {
     await GuestSession(code: host.code, me: const Profile('3人目', ''), listener: third, findHost: (_) => null).connect(lo, port, fingerprint: identity.fingerprint);
     await waitUntil('full', () => third.failures.contains('full'));
 
+    // コートを描ける大きさを教え合う（2台で小さい方にそろえるため）
+    guest.setFit(const CourtFit(1.1, 0.2));
+    host.setFit(const CourtFit(1.4, null));
+    await waitUntil('大きさ', () => hostRec.room?.players[1].fit?.k == 1.1 && guestRec.room?.players[0].fit?.k == 1.4);
+
     // 片方だけ準備OKでは始まらない
     host.setReady(true);
     await waitUntil('ホスト準備', () => guestRec.room?.players[0].ready == true);
