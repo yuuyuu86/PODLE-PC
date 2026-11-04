@@ -50,6 +50,9 @@ class _Guest {
   bool ready = false;
   bool rematch = false;
   KeyState keys = const KeyState();
+
+  /// 相手の版が対応している、あとから足した機能（古い版は送ってこない）
+  Set<String> features = const {};
 }
 
 class HostSession {
@@ -128,6 +131,7 @@ class HostSession {
     if (token != null && g == null) return _refuse(link, 'expired');
     if (g != null) return _refuse(link, 'full');
     _admit(link, m['name'] as String? ?? 'あいて', m['avatar'] as String? ?? '');
+    _guest?.features = {for (final f in (m['f'] as List?) ?? const []) '$f'};
   }
 
   void _refuse(Link link, String reason) {
@@ -169,6 +173,8 @@ class HostSession {
         _checkStart();
       case 'swap':
         swapSides();
+      case 'skip':
+        engine?.skipPractice(1 - hostSide);
       case 'rematch':
         if (phase != RoomPhase.result) return;
         g.rematch = true;
@@ -233,6 +239,9 @@ class HostSession {
     _checkRematch();
   }
 
+  /// 練習をおわる（2人そろったら本番）
+  void skipPractice() => engine?.skipPractice(hostSide);
+
   void setKeys(KeyState k) {
     _myPress.baseline(k);
     _myKeys = k;
@@ -257,7 +266,8 @@ class HostSession {
   void _checkStart() {
     final g = _guest;
     if (_myReady && g != null && g.connected && g.ready) {
-      _startMatch();
+      // 最初の試合の前だけ練習する（相手の版が練習に対応しているとき）
+      _startMatch(practice: g.features.contains('practice'));
     } else {
       broadcastRoom();
     }
@@ -272,8 +282,8 @@ class HostSession {
     }
   }
 
-  void _startMatch() {
-    engine = MatchEngine(game, random: _random, rule: rule);
+  void _startMatch({bool practice = false}) {
+    engine = MatchEngine(game, random: _random, rule: rule, practice: practice);
     phase = RoomPhase.match;
     _notice = null;
     _myReady = false;
@@ -405,7 +415,7 @@ class GuestSession {
       return;
     }
     _attach(l);
-    l.send({'t': 'join', 'code': code, 'name': _me.name, 'avatar': _me.avatar, 'token': _token, 'v': AppVersion.app, 'pv': AppVersion.protocol});
+    l.send({'t': 'join', 'code': code, 'name': _me.name, 'avatar': _me.avatar, 'token': _token, 'v': AppVersion.app, 'pv': AppVersion.protocol, 'f': AppVersion.features});
   }
 
   void _attach(Link l) {
@@ -495,6 +505,7 @@ class GuestSession {
   /// 左右の入れ替えを頼む（部屋を作った人のPCが入れ替える）
   void swapSides() => _link?.send(const {'t': 'swap'});
   void rematch() => _link?.send(const {'t': 'rematch'});
+  void skipPractice() => _link?.send(const {'t': 'skip'});
 
   /// 通信が切れた状況を作る（テスト用）
   void simulateDrop() => _link?.close();

@@ -28,7 +28,10 @@ class Boxer {
   /// 左右の拳を交互に出す
   int hand = 0;
 
-  Map<String, Object?> toJson() => {'s': side, 'x': r2(x), 'hp': hp, 'st': state.name, 'k': r2(timer), 'g': guarding, 'h': hand};
+  /// パンチの種類: 0 その場 / 1 踏み込み（前+J） / -1 下がりながら（後ろ+J）
+  int kind = 0;
+
+  Map<String, Object?> toJson() => {'s': side, 'x': r2(x), 'hp': hp, 'st': state.name, 'k': r2(timer), 'g': guarding, 'h': hand, if (kind != 0) 'pk': kind};
 
   static Boxer fromJson(Map<String, Object?> m) => Boxer((m['s'] as num).toInt())
     ..x = numD(m['x'])
@@ -36,7 +39,8 @@ class Boxer {
     ..state = BoxerState.values.byName(m['st'] as String)
     ..timer = numD(m['k'])
     ..guarding = m['g'] == true
-    ..hand = (m['h'] as num).toInt();
+    ..hand = (m['h'] as num).toInt()
+    ..kind = (m['pk'] as num?)?.toInt() ?? 0;
 }
 
 class BoxingWorld extends GameWorld {
@@ -71,6 +75,15 @@ class BoxingRules extends SportRules {
   static const tRecover = 0.22;
   static const tStagger = 0.32;
   static const tBlocked = 0.3;
+
+  /// 踏み込みパンチ: 前へ出ながら打つ。届く距離が伸びるが、外すと長く固まる
+  static const dashSpeed = 380.0;
+  static const dashReach = 36.0;
+  static const tDashMiss = 0.42;
+
+  /// 下がりながらのパンチ: 距離を取りやすいが、ダメージは小さい
+  static const backSpeed = 220.0;
+  static const backDamage = 0.6;
 
   /// 拳の先で当てるとジャスト、近すぎると弱い。[gap] は相手の体の表面までの距離
   static Timing timing(double gap) => gap >= reach - 26 ? Timing.just : (gap < 66 ? Timing.close : Timing.normal);
@@ -116,7 +129,8 @@ class BoxingRules extends SportRules {
           ..timer = tWindup
           ..actBuf = 0
           ..hit = false
-          ..hand = 1 - b.hand;
+          ..hand = 1 - b.hand
+          ..kind = (inp.axis * dir).sign.toInt();
       } else if (busy && b.timer <= 0) {
         switch (b.state) {
           case BoxerState.windup:
@@ -125,9 +139,11 @@ class BoxingRules extends SportRules {
               ..state = BoxerState.active
               ..timer = tActive;
           case BoxerState.active:
+            final miss = !b.hit;
             b
               ..state = BoxerState.recover
-              ..timer = tRecover;
+              ..timer = b.kind == 1 && miss ? tDashMiss : tRecover;
+            if (b.kind == 1 && miss) events.add(GameEvent('whiff', side: i, x: b.x + dir * 60, y: Field.ground - 100, n: 'すき！'));
           default:
             b
               ..state = BoxerState.idle
@@ -137,6 +153,9 @@ class BoxingRules extends SportRules {
 
       final speed = b.guarding ? 120.0 : 240.0;
       b.vx = approach(b.vx, b.state == BoxerState.idle ? inp.axis * speed : 0, 2200 * dt);
+      // 踏み込みパンチは振りかぶりから打ち終わりまで前へ、下がりながらのパンチは打ったあと後ろへ動く
+      if (b.kind == 1 && (b.state == BoxerState.windup || b.state == BoxerState.active)) b.vx = dir * dashSpeed;
+      if (b.kind == -1 && (b.state == BoxerState.active || b.state == BoxerState.recover)) b.vx = -dir * backSpeed;
       if (b.state == BoxerState.stagger) b.vx = -dir * 140;
       b.x = clampD(b.x + b.vx * dt, ringMin, ringMax);
       if (b.x == ringMin || b.x == ringMax) b.vx = 0;
@@ -162,7 +181,7 @@ class BoxingRules extends SportRules {
       final b = w.players[i];
       final o = w.players[1 - i];
       if (b.state != BoxerState.active || b.hit) continue;
-      if ((o.x - b.x).abs() - bodyHalf > reach) continue;
+      if ((o.x - b.x).abs() - bodyHalf > reach + (b.kind == 1 ? dashReach : 0)) continue;
       b.hit = true;
       final ax = o.x - facing(i) * bodyHalf;
       const ay = Field.ground - 82;
@@ -179,12 +198,12 @@ class BoxingRules extends SportRules {
       final counter = o.state == BoxerState.windup;
       final t = timing((o.x - b.x).abs() - bodyHalf);
       final base = counter ? counterDamage : damage;
-      final dmg = switch (t) { Timing.just => base * 1.4, Timing.close => base * 0.6, _ => base };
+      final dmg = switch (t) { Timing.just => base * 1.4, Timing.close => base * 0.6, _ => base } * (b.kind == -1 ? backDamage : 1);
       o
         ..hp = math.max(0, o.hp - dmg)
         ..state = BoxerState.stagger
         ..timer = tStagger;
-      events.add(GameEvent(counter ? 'counter' : 'punch', side: i, x: ax, y: ay, q: t.wire));
+      events.add(GameEvent(counter ? 'counter' : 'punch', side: i, x: ax, y: ay, q: t.wire, n: switch (b.kind) { 1 => 'ふみこみ', -1 => 'さがりうち', _ => null }));
       score[i]++; // 有効打
       if (o.hp <= 0) return EndResult(i, 'KO');
     }
@@ -270,6 +289,8 @@ class BoxingPainter extends SportPainter {
           pose.lean = -0.04;
         case BoxerState.active:
           extended();
+          if (b.kind == 1) pose.lean = 0.36;
+          if (b.kind == -1) pose.lean = -0.08;
         case BoxerState.recover when b.timer > 0.12:
           extended();
         case BoxerState.stagger:

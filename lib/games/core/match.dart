@@ -5,9 +5,10 @@ import '../boxing/boxing.dart';
 import 'common.dart';
 import 'stage.dart';
 
-/// 競技に依存しない試合進行: 開始前の操作説明 → プレー → 得点演出 → 終了。
+/// 競技に依存しない試合進行: （練習）→ 開始前の操作説明 → プレー → 得点演出 → 終了。
 /// 試合の状態は部屋を作ったPC（ホスト）だけが進め、相手には MatchState をそのまま送る。
-enum MatchPhase { intro, play, point, over }
+/// 練習は本番と同じように動けるが、点は数えない。2人とも「練習をおわる」を押すか、時間が来たら本番へ。
+enum MatchPhase { practice, intro, play, point, over }
 
 class LastPoint {
   const LastPoint({this.side, required this.reason, this.landX, required this.n});
@@ -41,8 +42,10 @@ class MatchState {
     this.endReason,
     List<GameEvent>? events,
     this.stage = 0,
+    List<bool>? practiceDone,
   })  : score = score ?? [0, 0],
-        events = events ?? [];
+        events = events ?? [],
+        practiceDone = practiceDone ?? [false, false];
 
   final GameKind game;
   GameWorld world;
@@ -63,6 +66,9 @@ class MatchState {
   /// このフレームで起きたこと（効果音・演出用）
   List<GameEvent> events;
 
+  /// 練習中、それぞれが「練習をおわる」を押したか
+  List<bool> practiceDone;
+
   Map<String, Object?> toJson() => {
         'g': game.name,
         'k': tick,
@@ -78,6 +84,7 @@ class MatchState {
         'w': world.toJson(),
         'ev': [for (final e in events) e.toJson()],
         'stg': stage,
+        if (phase == MatchPhase.practice) 'pd': practiceDone,
       };
 
   static MatchState fromJson(Map<String, Object?> m) {
@@ -97,24 +104,37 @@ class MatchState {
       endReason: m['er'] as String?,
       events: [for (final e in m['ev'] as List) GameEvent.fromJson((e as Map).cast<String, Object?>())],
       stage: (m['stg'] as num?)?.toInt() ?? 0,
+      practiceDone: m['pd'] == null ? null : [for (final v in m['pd'] as List) v == true],
     );
   }
 }
 
 class MatchEngine {
   /// [rule] は部屋で選んだルール（何点先取か、ボクシングは試合時間の秒数）
-  MatchEngine(this.game, {int? firstServer, math.Random? random, int? rule})
+  MatchEngine(this.game, {int? firstServer, math.Random? random, this.rule, bool practice = false})
       : rules = game.rules,
         winScore = game == GameKind.boxing ? game.rules.winScore : (rule ?? game.rules.winScore),
         state = MatchState(game: game, world: game.rules.makeWorld(), stage: (random ?? math.Random()).nextInt(Stage.values.length)) {
     final w = state.world;
-    if (rule != null && w is BoxingWorld) w.clock = rule.toDouble();
+    if (rule != null && w is BoxingWorld) w.clock = rule!.toDouble();
     final server = rules.serveRule == ServeRule.none ? null : (firstServer ?? (random ?? math.Random()).nextInt(2));
     state.server = server;
     rules.serve(state.world, server);
+    _firstServer = server;
+    if (practice) {
+      state
+        ..phase = MatchPhase.practice
+        ..timer = practiceTime;
+    }
   }
 
   static const introTime = 4.0;
+
+  /// 練習の長さ（これを過ぎたら、押していなくても本番へ）
+  static const practiceTime = 60.0;
+
+  final int? rule;
+  int? _firstServer;
   static const pointTime = 1.5;
   static const resumeTime = 3.0;
 
@@ -122,6 +142,29 @@ class MatchEngine {
   final SportRules rules;
   final int? winScore;
   final MatchState state;
+
+  /// [side] の選手が「練習をおわる」を押した。2人そろったら本番の準備へ
+  void skipPractice(int side) {
+    if (state.phase != MatchPhase.practice) return;
+    state.practiceDone[side] = true;
+    if (state.practiceDone.every((v) => v)) _endPractice();
+  }
+
+  /// 練習で動いたものを片付けて、本番を最初から始める
+  void _endPractice() {
+    final s = state;
+    s
+      ..world = rules.makeWorld()
+      ..score = [0, 0]
+      ..lastPoint = null
+      ..server = _firstServer
+      ..phase = MatchPhase.intro
+      ..timer = introTime;
+    final w = s.world;
+    if (rule != null && w is BoxingWorld) w.clock = rule!.toDouble();
+    rules.serve(s.world, s.server);
+    s.events.add(const GameEvent('practiceEnd'));
+  }
 
   void pause() {
     state.paused = true;
@@ -144,6 +187,25 @@ class MatchEngine {
       return;
     }
     switch (s.phase) {
+      case MatchPhase.practice:
+        s.timer -= dt;
+        if (s.timer <= 0) {
+          _endPractice();
+          return;
+        }
+        // 練習: 本番と同じように動くが、点は数えない。点が入ったら、その場でサーブからやり直す
+        final res = rules.step(s.world, inputs, dt, s.events, [0, 0]);
+        switch (res) {
+          case PointResult(:final side):
+            s.events.add(GameEvent('practicePoint', side: side));
+            if (side != null && rules.serveRule != ServeRule.none) s.server = side;
+            rules.serve(s.world, s.server);
+          case EndResult():
+            s.world = rules.makeWorld();
+            rules.serve(s.world, s.server);
+          case null:
+        }
+        return;
       case MatchPhase.intro:
         s.timer -= dt;
         if (s.timer <= 0) {

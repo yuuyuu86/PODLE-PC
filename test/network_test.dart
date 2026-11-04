@@ -102,6 +102,12 @@ void main() {
     expect(hostRec.room?.phase, RoomPhase.lobby);
     guest.setReady(true);
     await waitUntil('試合開始', () => hostRec.room?.phase == RoomPhase.match && guestRec.room?.phase == RoomPhase.match);
+    // 最初の試合の前は練習。2人とも「練習をおわる」で本番へ
+    await waitUntil('練習', () => guestRec.states.isNotEmpty && guestRec.states.last.phase == MatchPhase.practice);
+    host.skipPractice();
+    await waitUntil('相手を待つ', () => guestRec.states.last.practiceDone.contains(true));
+    expect(guestRec.states.last.phase, MatchPhase.practice, reason: '片方だけでは本番にならない');
+    guest.skipPractice();
     await waitUntil('プレー', () => guestRec.states.isNotEmpty && guestRec.states.last.phase == MatchPhase.play, timeout: const Duration(seconds: 8));
 
     // 両方のPCで同じ tick の状態が一致する
@@ -163,6 +169,12 @@ void main() {
     expect(hostRec.room?.players[1].ready, isFalse, reason: '入れかえたら準備OKは取り消す');
     host.setReady(true);
     guest.setReady(true);
+    // 最初の試合の前は練習。2人とも「練習をおわる」で本番へ
+    await waitUntil('練習', () => guestRec.states.isNotEmpty && guestRec.states.last.phase == MatchPhase.practice);
+    host.skipPractice();
+    await waitUntil('相手を待つ', () => guestRec.states.last.practiceDone.contains(true));
+    expect(guestRec.states.last.phase, MatchPhase.practice, reason: '片方だけでは本番にならない');
+    guest.skipPractice();
     await waitUntil('プレー', () => guestRec.states.isNotEmpty && guestRec.states.last.phase == MatchPhase.play, timeout: const Duration(seconds: 8));
     // ゲストは左の選手。A（左）で後ろへ下がる＝左へ動く
     final before = (guestRec.states.last.world as FencingWorld).players[0].x;

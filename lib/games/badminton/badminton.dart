@@ -50,6 +50,7 @@ abstract final class BadmintonRules {
         // 入力なし: 速くて低いドライブ気味の返球
         return shotAt(c.dir, 900, high ? 22 : 40, 'drive');
       },
+      stepDash: true,
       moveBall: (ball, dt) {
         final sp = math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
         ball.vx -= drag * sp * ball.vx * dt;

@@ -32,6 +32,7 @@ abstract final class VolleyRules {
       reach: (p) => p.onGround ? const Reach(8, 78, 72) : const Reach(14, 96, 76),
       serveShot: (dir) => Shot(dir * 360, -700, 'serve'),
       shot: _shot,
+      block: true,
       moveBall: (ball, dt) {
         ball.vy += gravity * dt;
         final sp = math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
@@ -50,6 +51,10 @@ abstract final class VolleyRules {
   static Shot _shot(ShotContext c) {
     final distToNet = math.max(10.0, (Field.center - c.ball.x).abs());
     // ジャンプ中、ネットより高い位置で打てばスパイク
+    // ジャンプ中の高い打点で後ろ入力: ブロックの上をふわっと越えるフェイント（ブロックでは止められない）
+    if (!c.player.onGround && c.ball.y < c.netTop - 6 && c.toward < 0) {
+      return Shot(c.dir * clampD(distToNet * 1.2 + 200, 240, 360), -430, 'feint');
+    }
     if (!c.player.onGround && c.ball.y < c.netTop - 6) {
       final power = 660 + clampD(c.rel, -30, 40) * 3;
       final t = distToNet / power;

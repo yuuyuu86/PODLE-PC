@@ -82,7 +82,7 @@ void main() {
     expect(find.textContaining('同じWi-Fiにつなぎ'), findsOneWidget);
     await tester.tap(find.text('バレー'));
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('真上にトス'), findsOneWidget);
+    expect(find.text('真上にトス（ジャンプ中ならフェイント）'), findsOneWidget);
     expect(find.textContaining('同じWi-Fiにつなぎ'), findsNothing);
   });
 }

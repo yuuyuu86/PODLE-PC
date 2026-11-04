@@ -13,6 +13,7 @@ import '../games/core/common.dart';
 import '../games/core/match.dart';
 import '../games/core/painting.dart';
 import '../net/discovery.dart';
+import '../ui/wifi_label.dart';
 import '../ui/doodle.dart';
 import '../ui/logo.dart';
 import '../ui/widgets.dart';
@@ -438,7 +439,9 @@ class _NearbyPanel extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const DoodleHeading('近くの PODLE!', size: 20),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
+              const WifiLabel(),
+              const SizedBox(height: 6),
               if (d.status == DiscoveryStatus.failed || model.listenError != null)
                 StatusLine(state: StatusKind.bad, text: '近くのPCを探せません（ポート ${d.udpPort} が使われているか、ファイアウォールで止められています）')
               else if (peers.isEmpty)

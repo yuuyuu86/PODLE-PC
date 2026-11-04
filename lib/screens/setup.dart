@@ -7,6 +7,7 @@ import '../app/version.dart';
 import '../games/core/catalog.dart';
 import '../net/discovery.dart';
 import '../net/wire.dart';
+import '../ui/wifi_label.dart';
 import '../ui/doodle.dart';
 import '../ui/widgets.dart';
 import 'home.dart';
@@ -144,7 +145,9 @@ class _JoinScreenState extends State<JoinScreen> {
         children: [
           if (widget.nearby) ...[
             const Text('同じWi-Fiで相手を待っている部屋です。押すとその部屋に参加します。あなたが右の選手になります。', style: TextStyle(fontSize: 18, height: 1.45)),
-            const SizedBox(height: 16),
+            const SizedBox(height: 4),
+            const WifiLabel(),
+            const SizedBox(height: 12),
             const SideBySideHint(you: 1),
             const SizedBox(height: 22),
             const NearbyRooms(showEmpty: true),

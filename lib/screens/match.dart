@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../app/quests.dart';
 import '../app/app_model.dart';
@@ -581,6 +582,7 @@ class _Overlays extends StatelessWidget {
     if (h.resumeCount > 0) {
       return sheet([const Text('つながりました。再開まで', style: TextStyle(fontSize: 22)), Text('${h.resumeCount}', style: const TextStyle(fontSize: 96, height: 1.1))], 121);
     }
+    if (h.phase == MatchPhase.practice) return _PracticeOverlay(hud: h, you: model.you, onSkip: model.skipPractice);
     if (h.phase == MatchPhase.intro) {
       return sheet([
         Text('PODLE! ${game.title}', style: const TextStyle(fontSize: 30)),
@@ -816,6 +818,120 @@ class _QuestNews extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 練習中のしるし: 画面のまわりを工事中のような斜めのしまで囲み、上に「練習中」の札と「練習をおわる」を出す
+class _PracticeOverlay extends StatefulWidget {
+  const _PracticeOverlay({required this.hud, required this.you, required this.onSkip});
+  final Hud hud;
+  final int you;
+  final VoidCallback onSkip;
+
+  @override
+  State<_PracticeOverlay> createState() => _PracticeOverlayState();
+}
+
+class _PracticeOverlayState extends State<_PracticeOverlay> {
+  @override
+  void initState() {
+    super.initState();
+    HardwareKeyboard.instance.addHandler(_key);
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_key);
+    super.dispose();
+  }
+
+  // Enter でも練習をおわれる
+  bool _key(KeyEvent e) {
+    if (e is KeyDownEvent && (e.logicalKey == LogicalKeyboardKey.enter || e.logicalKey == LogicalKeyboardKey.numpadEnter)) {
+      widget.onSkip();
+      return true;
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final h = widget.hud;
+    final me = h.practiceDone[widget.you], opp = h.practiceDone[1 - widget.you];
+    return IgnorePointer(
+      ignoring: false,
+      child: Stack(children: [
+        const Positioned.fill(child: IgnorePointer(child: CustomPaint(painter: _PracticeFrame()))),
+        // 横の遊び方の案内と重ならないよう、コートの上（ネットと反対側に寄せない）に出す
+        Align(
+          alignment: Alignment(widget.you == 0 ? 0.5 : -0.5, -1),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 22),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Transform.rotate(
+                angle: -0.03,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 6),
+                  decoration: BoxDecoration(color: Palette.ink, borderRadius: BorderRadius.circular(6)),
+                  child: const Text('練習中', style: TextStyle(fontSize: 40, color: Palette.paper, height: 1.15, letterSpacing: 6)),
+                ),
+              ),
+              const SizedBox(height: 6),
+              DoodleBox(
+                seed: 190,
+                shadow: true,
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Text('点は数えません。動きを試してみよう（あと ${math.max(0, h.count)}秒で本番）', textAlign: TextAlign.center, style: const TextStyle(fontSize: 16)),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: 280,
+                    child: DoodleButton(
+                      label: me ? '相手を待っています…' : '練習をおわる（Enter）',
+                      icon: me ? Icons.hourglass_empty_rounded : Icons.skip_next_rounded,
+                      primary: !me,
+                      fontSize: 18,
+                      seed: 191,
+                      onPressed: me ? null : widget.onSkip,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(opp ? '相手は練習をおわりました' : '相手は練習中', style: const TextStyle(fontSize: 14, color: Palette.pencil)),
+                ]),
+              ),
+            ]),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+/// 画面のふちの、黒と紙色の斜めのしま
+class _PracticeFrame extends CustomPainter {
+  const _PracticeFrame();
+
+  @override
+  void paint(Canvas c, Size size) {
+    const t = 12.0;
+    final outer = Offset.zero & size;
+    final band = Path()
+      ..fillType = PathFillType.evenOdd
+      ..addRect(outer)
+      ..addRect(outer.deflate(t));
+    c.save();
+    c.clipPath(band);
+    c.drawRect(outer, Paint()..color = Palette.paper);
+    final stripe = Paint()
+      ..color = Palette.ink
+      ..strokeWidth = 9;
+    for (var x = -size.height; x < size.width + size.height; x += 26) {
+      c.drawLine(Offset(x, 0), Offset(x + size.height, size.height), stripe);
+    }
+    c.restore();
+  }
+
+  @override
+  bool shouldRepaint(_PracticeFrame old) => false;
 }
 
 AvatarMood _mood(int? winner, int side) => winner == null || winner == -1 ? AvatarMood.normal : (winner == side ? AvatarMood.win : AvatarMood.lose);

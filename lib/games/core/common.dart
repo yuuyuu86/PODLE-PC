@@ -104,9 +104,12 @@ class PressTracker {
 
 /// 試合中の出来事（効果音・演出用）
 class GameEvent {
-  const GameEvent(this.type, {this.side, this.x, this.y, this.q});
+  const GameEvent(this.type, {this.side, this.x, this.y, this.q, this.n});
 
   final String type;
+
+  /// 技の名前（ブロック！ / ため突き！ など）。画面に文字で出す
+  final String? n;
 
   /// 当てたタイミング（[Timing] の名前。'just' / 'early' / 'late' / 'close'）。null はふつう
   final String? q;
@@ -120,10 +123,11 @@ class GameEvent {
         if (x != null) 'x': r2(x!),
         if (y != null) 'y': r2(y!),
         if (q != null) 'q': q,
+        if (n != null) 'n': n,
       };
 
-  static GameEvent fromJson(Map<String, Object?> m) =>
-      GameEvent(m['t'] as String, side: (m['s'] as num?)?.toInt(), x: (m['x'] as num?)?.toDouble(), y: (m['y'] as num?)?.toDouble(), q: m['q'] as String?);
+  static GameEvent fromJson(Map<String, Object?> m) => GameEvent(m['t'] as String,
+      side: (m['s'] as num?)?.toInt(), x: (m['x'] as num?)?.toDouble(), y: (m['y'] as num?)?.toDouble(), q: m['q'] as String?, n: m['n'] as String?);
 }
 
 /// 攻撃を当てたタイミングの出来。ジャストは強く、早すぎ・遅すぎ・近すぎは弱くなる
@@ -245,8 +249,24 @@ class Runner {
   /// 振り始めたとき、ボールがすでに届く範囲にあった時間
   double lateBy = 0;
 
+  /// バレーのブロック: 腕を伸ばしている残り時間と、このジャンプで使ったか
+  double block = 0;
+  bool blockUsed = false;
+
+  /// バドミントンのステップ: 踏み込んでいる残り時間・その向き・踏み込んだあとの硬直・次に使えるまで
+  double step = 0;
+  double stepDir = 0;
+  double stiff = 0;
+  double stepCd = 0;
+
+  /// 方向キーの2回押しを見分ける（ホストだけが使う）
+  bool prevL = false;
+  bool prevR = false;
+  double tapDir = 0;
+  double tapAge = 9;
+
   /// 1フレーム進める。振り始めたら true。
-  bool step(PlayerInput inp, double dt, RunnerParams o) {
+  bool advance(PlayerInput inp, double dt, RunnerParams o) {
     final accel = onGround ? o.accel : o.airAccel;
     vx = approach(vx, inp.axis * o.speed, accel * dt);
 
@@ -288,13 +308,28 @@ class Runner {
   }
 
   /// 描画に必要な分だけ送る
-  Map<String, Object?> toJson() => {'s': side, 'x': r2(x), 'y': r2(y), 'vx': r2(vx), 'g': onGround, 'w': r2(swing)};
+  Map<String, Object?> toJson() => {
+        's': side,
+        'x': r2(x),
+        'y': r2(y),
+        'vx': r2(vx),
+        'g': onGround,
+        'w': r2(swing),
+        if (block > 0) 'bk': r2(block),
+        if (step > 0) 'st': r2(step),
+        if (stiff > 0) 'sf': r2(stiff),
+        if (step > 0) 'sd': stepDir,
+      };
 
   static Runner fromJson(Map<String, Object?> m) => Runner((m['s'] as num).toInt(), numD(m['x']))
     ..y = numD(m['y'])
     ..vx = numD(m['vx'])
     ..onGround = m['g'] == true
-    ..swing = numD(m['w']);
+    ..swing = numD(m['w'])
+    ..block = numD(m['bk'])
+    ..step = numD(m['st'])
+    ..stiff = numD(m['sf'])
+    ..stepDir = numD(m['sd']);
 }
 
 class Ball {

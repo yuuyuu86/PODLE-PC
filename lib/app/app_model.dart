@@ -9,6 +9,7 @@ import '../games/core/match.dart';
 import '../games/core/painting.dart';
 import '../games/rally/rally.dart';
 import '../net/discovery.dart';
+import '../net/wifi.dart';
 import '../net/link.dart';
 import '../net/peer_identity.dart';
 import '../net/sessions.dart';
@@ -37,7 +38,7 @@ class MatchFeed extends ChangeNotifier {
     latest = s;
     for (final e in s.events) {
       if (e.x != null && e.y != null) {
-        bursts.add(Burst(e.x!, e.y!, now, big: const {'spike', 'smash', 'counter', 'touche'}.contains(e.type), timing: Timing.of(e.q)));
+        bursts.add(Burst(e.x!, e.y!, now, big: const {'spike', 'smash', 'counter', 'touche', 'vblock'}.contains(e.type), timing: Timing.of(e.q), name: e.n));
       }
     }
     bursts.removeWhere((b) => now - b.born > Burst.labelLife);
@@ -64,6 +65,7 @@ class Hud {
     this.endReason,
     this.extra,
     this.serving = false,
+    this.practiceDone = const [false, false],
   });
 
   factory Hud.of(MatchState s) {
@@ -80,6 +82,7 @@ class Hud {
       endReason: s.endReason,
       extra: s.game.painter.hud(s.world),
       serving: w is RallyWorld && w.serving,
+      practiceDone: s.phase == MatchPhase.practice ? List.of(s.practiceDone) : const [false, false],
     );
   }
 
@@ -95,6 +98,9 @@ class Hud {
   final HudExtra? extra;
   final bool serving;
 
+  /// 練習中、それぞれが「練習をおわる」を押したか
+  final List<bool> practiceDone;
+
   @override
   bool operator ==(Object other) =>
       other is Hud &&
@@ -109,7 +115,9 @@ class Hud {
       other.winner == winner &&
       other.endReason == endReason &&
       other.extra == extra &&
-      other.serving == serving;
+      other.serving == serving &&
+      other.practiceDone[0] == practiceDone[0] &&
+      other.practiceDone[1] == practiceDone[1];
 
   @override
   int get hashCode => Object.hash(phase, count, score[0], score[1], server, paused, resumeCount, lastPoint?.n, winner, extra, serving);
@@ -139,6 +147,9 @@ class AppModel extends ChangeNotifier implements SessionListener {
   final AppSettings settings;
   final GameFeedback feedback;
   final Discovery discovery;
+
+  /// 今つながっている Wi-Fi（画面に小さく出す）
+  final wifi = WifiInfo();
   final UpdateChecker updates;
 
   /// 同じWi-Fiで、自分より新しい版を使っているPCの版（いちばん新しいもの）
@@ -314,6 +325,12 @@ class AppModel extends ChangeNotifier implements SessionListener {
   void swapSides() {
     host?.swapSides();
     guest?.swapSides();
+  }
+
+  /// 練習をおわる
+  void skipPractice() {
+    host?.skipPractice();
+    guest?.skipPractice();
   }
 
   void rematch() {

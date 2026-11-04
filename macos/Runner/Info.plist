@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSLocationUsageDescription</key>
+	<string>今つながっている Wi-Fi の名前を表示するために使います（場所は使いません）。</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>今つながっている Wi-Fi の名前を表示するために使います（場所は使いません）。</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>同じWi-Fiにある PODLE! のPCを見つけて、1対1で対戦するために使います。</string>
 	<key>CFBundleDevelopmentRegion</key>

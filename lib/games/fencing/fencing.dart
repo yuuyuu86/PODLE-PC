@@ -26,12 +26,29 @@ class Fencer {
   /// パリィされて後ろへ下がる残り時間（固まる時間が延びても、下がる距離は変えない）
   double backTime = 0;
 
-  Map<String, Object?> toJson() => {'s': side, 'x': r2(x), 'st': state.name, 'k': r2(timer)};
+  /// J を押し続けてためている時間（構えたまま）
+  double charge = 0;
+
+  /// いまの突きが、ため突きか（遠くまで届くが、外すと長く固まる）
+  bool power = false;
+
+  bool get charged => charge >= FencingRules.chargeFull;
+
+  Map<String, Object?> toJson() => {
+        's': side,
+        'x': r2(x),
+        'st': state.name,
+        'k': r2(timer),
+        if (charge > 0) 'cg': r2(charge),
+        if (power) 'pw': true,
+      };
 
   static Fencer fromJson(Map<String, Object?> m) => Fencer((m['s'] as num).toInt())
     ..x = numD(m['x'])
     ..state = FencerState.values.byName(m['st'] as String)
-    ..timer = numD(m['k']);
+    ..timer = numD(m['k'])
+    ..charge = numD(m['cg'])
+    ..power = m['pw'] == true;
 }
 
 class FencingWorld extends GameWorld {
@@ -69,6 +86,12 @@ class FencingRules extends SportRules {
   static const tParried = 0.55; // パリィされた側の硬直
   static const tDoubleWindow = 0.06; // 相打ちとみなす時間差
 
+  /// ため突き: これだけ押し続けると、ため完了。最大までためると自動で突く
+  static const chargeFull = 0.4;
+  static const chargeMax = 1.2;
+  static const chargeExt = 70.0; // ため突きで余分に伸びる長さ
+  static const tPowerRecover = 0.75; // ため突きを外したときの硬直
+
   /// パリィを構えてから突きが届くまでの時間で決める
   static Timing parryTiming(double elapsed) => elapsed <= 0.08 ? Timing.just : (elapsed > 0.16 ? Timing.early : Timing.normal);
 
@@ -82,7 +105,7 @@ class FencingRules extends SportRules {
 
   static double bladeTip(Fencer f) {
     var ext = 0.0;
-    if (f.state == FencerState.extend) ext = lungeExt * math.min(1, 1 - f.timer / tExtend + 0.35);
+    if (f.state == FencerState.extend) ext = (lungeExt + (f.power ? chargeExt : 0)) * math.min(1, 1 - f.timer / tExtend + 0.35);
     return f.x + facing(f.side) * (arm + ext);
   }
 
@@ -118,8 +141,9 @@ class FencingRules extends SportRules {
             ..state = FencerState.windup
             ..timer = tWindup
             ..actBuf = 0
-            ..hit = false;
-          events.add(GameEvent('lunge', side: i));
+            ..hit = false
+            ..charge = 0
+            ..power = false;
         } else if (f.guardBuf > 0) {
           f
             ..state = FencerState.parry
@@ -127,16 +151,28 @@ class FencingRules extends SportRules {
             ..guardBuf = 0;
           events.add(GameEvent('guard', side: i));
         }
+      } else if (f.state == FencerState.windup && f.timer <= 0 && inp.act && f.charge < chargeMax) {
+        // J を押し続けている間は、構えたままためる
+        final was = f.charged;
+        f.charge += dt;
+        if (f.charged && !was) events.add(GameEvent('charge', side: i, x: f.x, y: Field.ground - 150, n: 'ため'));
       } else if (f.timer <= 0) {
         switch (f.state) {
           case FencerState.windup:
             f
+              ..power = f.charged
+              ..charge = 0
               ..state = FencerState.extend
               ..timer = tExtend;
+            events.add(GameEvent('lunge', side: i));
           case FencerState.extend:
+            final miss = !f.hit;
             f
               ..state = FencerState.recover
-              ..timer = tRecover;
+              ..timer = f.power && miss ? tPowerRecover : tRecover;
+            // ため突きを外すと大きな隙
+            if (f.power && miss) events.add(GameEvent('whiff', side: i, x: bladeTip(f), y: Field.ground - 90, n: 'すき！'));
+            f.power = false;
           case FencerState.parry:
             f
               ..state = FencerState.parryRecover
@@ -153,7 +189,7 @@ class FencingRules extends SportRules {
       final a = inp.axis;
       final target = canMove ? a * (a * dir > 0 ? 250 : 220) : 0.0;
       f.vx = approach(f.vx, target, 2400 * dt);
-      if (f.state == FencerState.extend) f.vx = dir * 330;
+      if (f.state == FencerState.extend) f.vx = dir * (f.power ? 420 : 330);
       if (f.state == FencerState.parried && f.backTime > 0) {
         f.vx = -dir * 120;
         f.backTime -= dt;
@@ -196,7 +232,8 @@ class FencingRules extends SportRules {
         o
           ..state = FencerState.idle // パリィ成功側はすぐ反撃できる
           ..timer = 0;
-        events.add(GameEvent('parry', side: 1 - i, x: tip, y: y, q: t.wire));
+        events.add(GameEvent('parry', side: 1 - i, x: tip, y: y, q: t.wire, n: f.power ? 'ため突きをパリィ！' : null));
+        f.power = false;
         continue;
       }
       final p = w.pendingSide;
@@ -209,7 +246,7 @@ class FencingRules extends SportRules {
       w
         ..pendingSide = i
         ..pendingTimer = switch (t) { Timing.just => 0, Timing.close => tDoubleWindow * 2, _ => tDoubleWindow };
-      events.add(GameEvent('touche', side: i, x: tip, y: y, q: t.wire));
+      events.add(GameEvent('touche', side: i, x: tip, y: y, q: t.wire, n: f.power ? 'ため突き！' : null));
     }
 
     final p = w.pendingSide;
@@ -265,6 +302,14 @@ class FencingPainter extends SportPainter {
       final pose = _pose(f.state)
         ..armLenF = 28
         ..mask = true;
+      // ため中: 腰を落として剣を引く（相手から見える構え）
+      if (f.state == FencerState.windup && f.charge > 0) {
+        pose
+          ..lean = -0.12
+          ..armF = 0.9
+          ..kneeF = 0.8
+          ..kneeB = 0.3;
+      }
       final seed = s * 100 + (info.time * 6).floor() % 3;
       final j = Figure.draw(c, x: f.x, y: Field.ground, dir: dir, own: own, seed: seed, pose: pose, label: info.labels ? (own ? 'あなた' : 'あいて') : null, avatar: info.avatarOf(s));
       // 剣: 突きの最中は判定に使った剣先まで伸ばす
@@ -285,6 +330,21 @@ class FencingPainter extends SportPainter {
       ink(c, Sketch.line(h, end, seed: seed + 9, wobble: 0.4), own ? 3 : 2);
       ink(c, Sketch.line(Offset(h.dx + dir * 4, h.dy - 7), Offset(h.dx + dir * 4, h.dy + 7), seed: seed + 8, wobble: 0.3), own ? 3.4 : 2.4);
       if (f.state == FencerState.parried) drawText(c, '？', Offset(f.x, Field.ground - 150), size: 26);
+      // ため中は剣先に、たまり具合の輪（ため完了で二重）
+      if (f.state == FencerState.windup && f.charge > 0) {
+        final k = math.min(1.0, f.charge / FencingRules.chargeFull);
+        final pen = Sketch.pen(f.charged ? 3 : 1.8, color: f.charged ? Palette.ink : Palette.pencil);
+        c.drawPath(Sketch.circle(end, 6 + k * 12, seed: 7, wobble: 0.08), pen);
+        if (f.charged) c.drawPath(Sketch.circle(end, 26 + math.sin(info.time * 18) * 3, seed: 8, wobble: 0.08), pen);
+        // ため突きが届くところを足元に点線で（読まれる代わりに、距離が分かる）
+        if (f.charged) {
+          final reach = f.x + dir * (FencingRules.arm + FencingRules.lungeExt + FencingRules.chargeExt + 60);
+          for (var x = 0.0; x < 1; x += 0.1) {
+            final a = f.x + (reach - f.x) * x;
+            c.drawLine(Offset(a, Field.ground + 22), Offset(a + dir * 8, Field.ground + 22), Sketch.pen(2, color: Palette.pencil));
+          }
+        }
+      }
     }
     final p = w.pendingSide;
     if (p != null) drawText(c, '！', Offset(FencingRules.bladeTip(w.players[p]), Field.ground - 110), size: 34);

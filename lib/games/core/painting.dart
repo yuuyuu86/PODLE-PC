@@ -232,7 +232,10 @@ abstract final class Figure {
 
 /// 打った瞬間などの短い衝撃線
 class Burst {
-  const Burst(this.x, this.y, this.born, {this.big = false, this.timing = Timing.normal});
+  const Burst(this.x, this.y, this.born, {this.big = false, this.timing = Timing.normal, this.name});
+
+  /// 技の名前（ブロック！ / ため突き！ / すき！ など）
+  final String? name;
 
   final double x;
   final double y;
@@ -247,6 +250,17 @@ class Burst {
   void draw(Canvas c, double now) {
     final age = now - born;
     if (age < 0) return;
+    if (name != null && age < labelLife) {
+      // 技の名前は、白いふきだしに黒い文字（タイミングの文字より上）
+      final f = age / labelLife;
+      final alpha = f < 0.6 ? 1.0 : 1 - (f - 0.6) / 0.4;
+      final at = Offset(x, y - 62 - f * 26);
+      final w = name!.length * 22.0 + 20;
+      final box = RRect.fromRectAndRadius(Rect.fromCenter(center: at, width: w, height: 34), const Radius.circular(8));
+      c.drawRRect(box, Sketch.fill(Palette.ink.withValues(alpha: alpha)));
+      drawText(c, name!, at, size: 21, color: Palette.paper.withValues(alpha: alpha));
+    }
+    if (name == 'すき！' || name == 'ため') return;
     if (timing != Timing.normal && age < labelLife) {
       final f = age / labelLife;
       final alpha = f < 0.6 ? 1.0 : 1 - (f - 0.6) / 0.4;

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../app/services.dart';
 import '../avatar/avatar_painter.dart';
 import '../net/wire.dart';
+import '../ui/wifi_label.dart';
 import '../ui/doodle.dart';
 import '../ui/widgets.dart';
 import 'root.dart';
@@ -93,6 +94,9 @@ class _RoomScreenState extends State<RoomScreen> {
             Flexible(child: Text(_status(r), style: const TextStyle(fontSize: 18))),
           ],
         ),
+        const SizedBox(height: 6),
+        // 相手と同じ Wi-Fi か確かめられるように
+        const WifiLabel(center: true),
       ],
     );
     return DoodleScaffold(

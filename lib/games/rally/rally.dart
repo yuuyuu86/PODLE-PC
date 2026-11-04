@@ -95,7 +95,15 @@ class RallyConfig {
     required this.serveShot,
     required this.shot,
     required this.moveBall,
+    this.block = false,
+    this.stepDash = false,
   });
+
+  /// ネット際でジャンプ中にもう一度 Space でブロック（バレー）
+  final bool block;
+
+  /// 同じ方向キーを素早く2回で踏み込みステップ（バドミントン）
+  final bool stepDash;
 
   final double netTop;
   final double netBounce;
@@ -113,6 +121,22 @@ class RallyConfig {
   final Shot Function(double dir) serveShot;
   final Shot Function(ShotContext) shot;
   final void Function(Ball, double dt) moveBall;
+}
+
+/// ブロック・ステップの数値
+abstract final class Moves {
+  /// ブロックできる、ネットからの距離（選手の中心から）
+  static const blockRange = 80.0;
+  static const blockTime = 0.3;
+
+  /// ブロックしたあとは、着地するまで打てない（タイミングを外すと無防備）
+  static const blockCooldown = 0.6;
+
+  static const doubleTap = 0.24;
+  static const stepTime = 0.12;
+  static const stepSpeed = 620.0;
+  static const stepStiff = 0.2;
+  static const stepCooldown = 0.55;
 }
 
 /// サーブ、ネット衝突、着地・アウト判定、タッチ数制限をまとめたネット競技の共通ルール
@@ -184,6 +208,68 @@ class RallyRules extends SportRules {
     events.add(GameEvent(shot.kind, side: side, x: w.ball.x, y: w.ball.y, q: timing.wire));
   }
 
+  /// 同じ方向キーを素早く2回押すと、その向きへ短く踏み込む。踏み込んだあとは少し固まる
+  PlayerInput _stepDash(Runner p, PlayerInput inp, double dt, List<GameEvent> events) {
+    p.tapAge += dt;
+    p.stepCd = math.max(0, p.stepCd - dt);
+    final tapL = inp.left && !p.prevL, tapR = inp.right && !p.prevR;
+    p
+      ..prevL = inp.left
+      ..prevR = inp.right;
+    final tap = tapL ? -1.0 : (tapR ? 1.0 : 0.0);
+    if (tap != 0) {
+      if (tap == p.tapDir && p.tapAge <= Moves.doubleTap && p.stepCd <= 0 && p.onGround && p.stiff <= 0 && p.step <= 0) {
+        p
+          ..step = Moves.stepTime
+          ..stepDir = tap
+          ..stepCd = Moves.stepCooldown
+          ..tapDir = 0;
+        events.add(GameEvent('step', side: p.side));
+      } else {
+        p
+          ..tapDir = tap
+          ..tapAge = 0;
+      }
+    }
+    if (p.stiff > 0) {
+      p.stiff = math.max(0, p.stiff - dt);
+      p.vx = approach(p.vx, 0, 4000 * dt);
+      // 固まっている間は動けず、振れない
+      return PlayerInput(jump: false, act: false);
+    }
+    if (p.step > 0) return PlayerInput(left: inp.left, right: inp.right, act: inp.act, actPressed: inp.actPressed);
+    return inp;
+  }
+
+  /// ブロックの腕に相手のスパイクが当たったら、相手のコートへはね返す（タッチ数には数えない）
+  StepResult? _tryBlock(RallyWorld w, List<GameEvent> events) {
+    final b = w.ball;
+    if (w.lastShot != 'spike') return null;
+    for (var i = 0; i < 2; i++) {
+      final p = w.players[i];
+      if (p.block <= 0 || w.lastHitter == i) continue;
+      final dir = facing(i);
+      // ボールが自分のコートへ向かっているとき
+      if (b.vx * dir >= 0) continue;
+      final handX = Field.center - dir * 14;
+      final top = p.y - 180, bottom = math.min(p.y - 30, cfg.netTop + 12);
+      if ((b.x - handX).abs() > b.r + 18 || b.y < top || b.y > bottom) continue;
+      b
+        ..x = Field.center + dir * (net.w / 2 + b.r + 4)
+        ..vx = dir * math.max(220, b.vx.abs() * 0.4)
+        ..vy = -120;
+      p.block = 0;
+      w
+        ..lastHitter = i
+        ..lastShot = 'block'
+        ..lastHitAt = w.clock
+        ..touches = [0, 0];
+      events.add(GameEvent('vblock', side: i, x: b.x, y: b.y, n: 'ブロック！'));
+      return null;
+    }
+    return null;
+  }
+
   @override
   void serve(GameWorld world, int? server) {
     final w = world as RallyWorld;
@@ -210,7 +296,7 @@ class RallyRules extends SportRules {
       if (w.serving && i == w.server) {
         // サーブ側は後方エリアに留まり、ジャンプしない
         final params = cfg.runner.within(cfg.serveZone[i].$1, cfg.serveZone[i].$2);
-        final swung = w.players[i].step(inputs[i].copyWith(jump: false, jumpPressed: false), dt, params);
+        final swung = w.players[i].advance(inputs[i].copyWith(jump: false, jumpPressed: false), dt, params);
         _placeBallOnServer(w);
         w.serveClock += dt;
         if (swung || w.serveClock > cfg.autoServe) {
@@ -221,7 +307,31 @@ class RallyRules extends SportRules {
         continue;
       }
       final p = w.players[i];
-      if (p.step(inputs[i], dt, cfg.runner.within(lo, hi))) p.lateBy = p.reachClock;
+      var inp = inputs[i];
+      if (cfg.stepDash) inp = _stepDash(p, inp, dt, events);
+      // ブロック: ジャンプ中にもう一度 Space。ネット際でだけ腕を伸ばす
+      final blockNow = cfg.block && !p.onGround && inp.jumpPressed && !p.blockUsed && (p.x - Field.center).abs() <= Moves.blockRange;
+      if (cfg.block && !p.onGround && inp.jumpPressed) inp = inp.copyWith(jumpPressed: false);
+      if (p.advance(inp, dt, cfg.runner.within(lo, hi))) p.lateBy = p.reachClock;
+      if (cfg.stepDash && p.step > 0) {
+        p.x = clampD(p.x + p.stepDir * Moves.stepSpeed * dt, lo, hi);
+        p.step = math.max(0, p.step - dt);
+        if (p.step <= 0) p.stiff = Moves.stepStiff;
+      }
+      p.block = math.max(0, p.block - dt);
+      if (blockNow) {
+        p
+          ..block = Moves.blockTime
+          ..blockUsed = true
+          ..cd = math.max(p.cd, Moves.blockCooldown)
+          ..swing = 0;
+        events.add(GameEvent('blockup', side: i));
+      }
+      if (p.onGround) {
+        p
+          ..blockUsed = false
+          ..block = 0;
+      }
     }
     if (w.serving) return null;
     // 振らずにボールが届く範囲にあった時間を数える（振ってから届いた分は数えない）
@@ -248,6 +358,11 @@ class RallyRules extends SportRules {
       final t = timing(p, cfg.runner.swingTime);
       _launch(w, i, adjust(cfg.shot(ctx), t), events, t);
       if (w.touches[i] > cfg.maxTouches) return PointResult(1 - i, 'タッチ数オーバー');
+    }
+
+    if (cfg.block) {
+      final r = _tryBlock(w, events);
+      if (r != null) return r;
     }
 
     cfg.moveBall(w.ball, dt);
@@ -348,6 +463,28 @@ abstract final class RallyPaint {
       // ラケットは前の手。振ると後ろから前上へ
       pose.armF = k == null ? 1.6 : (p.onGround ? 0.4 + k * 2.4 : 3.4 - k * 1.9);
       pose.armB = k == null ? -0.6 : -0.8;
+    }
+    // ブロック中は両腕をまっすぐ上へ
+    if (p.block > 0) {
+      pose
+        ..armF = 3.05
+        ..armB = 2.95
+        ..lean = -0.05;
+    }
+    // ステップで踏み込んだあとの硬直（ひざを曲げて固まる）
+    if (p.stiff > 0) {
+      pose
+        ..kneeF = 0.7
+        ..kneeB = 0.5
+        ..lean = 0.25;
+    }
+    // 踏み込み中は、うしろに速さの線
+    if (p.step > 0) {
+      final pen = Sketch.pen(2, color: Palette.pencil);
+      for (var k = 0; k < 3; k++) {
+        final y = p.y - 20 - k * 22;
+        c.drawPath(Sketch.line(Offset(p.x - p.stepDir * 26, y), Offset(p.x - p.stepDir * (60 + k * 8), y), seed: k, wobble: 0.5), pen);
+      }
     }
     final seed = p.side * 100 + (info.time * 6).floor() % 3; // 少しだけ線がゆらぐ
     final j = Figure.draw(c, x: p.x, y: p.y, dir: dir, own: own, seed: seed, pose: pose, label: info.labels ? (own ? 'あなた' : 'あいて') : null, avatar: info.avatarOf(p.side));

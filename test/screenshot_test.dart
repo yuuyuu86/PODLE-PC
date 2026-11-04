@@ -127,6 +127,13 @@ void main() {
       ..step(const [PlayerInput.none, PlayerInput.none], 1 / 60);
     model.sessionState(intro.state);
     await shot('19-intro');
+    final practice = MatchEngine(GameKind.volley, firstServer: 0, practice: true)
+      ..state.stage = 2
+      ..step(const [PlayerInput.none, PlayerInput.none], 1 / 60)
+      ..skipPractice(1)
+      ..step(const [PlayerInput.none, PlayerInput.none], 1 / 60);
+    model.sessionState(practice.state);
+    await shot('18-practice');
     // 半分表示の右の選手: 開始前の案内はコートの外側に出る
     model.sessionRoom(RoomInfo(code: 'KQTE', game: GameKind.volley, phase: RoomPhase.match, you: 1, players: info.players));
     model.sessionState((MatchEngine(GameKind.volley)

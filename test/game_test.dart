@@ -8,6 +8,8 @@ import 'package:podle_pc/games/core/common.dart';
 import 'package:podle_pc/games/core/match.dart';
 import 'package:podle_pc/games/fencing/fencing.dart';
 import 'package:podle_pc/games/rally/rally.dart';
+import 'package:podle_pc/games/sumo/sumo.dart';
+import 'package:podle_pc/games/tug/tug.dart';
 import 'package:podle_pc/net/wire.dart';
 
 /// 簡単なボット。押した瞬間は前のフレームとの差で作る（実際の入力と同じ形）
@@ -40,6 +42,11 @@ class Bot {
         duel((w.players[1].x - w.players[0].x).abs(), 190, 0.03);
       case BoxingWorld w:
         duel((w.players[1].x - w.players[0].x).abs(), 120, 0.3);
+      case TugWorld _:
+        act = t % (16 + side * 7) < 2;
+        jump = rnd.nextDouble() < 0.01;
+      case SumoWorld w:
+        duel((w.players[1].x - w.players[0].x).abs(), 60, 0.1);
     }
     final out = PlayerInput(left: left, right: right, jump: jump, act: act, jumpPressed: jump && !prev.jump, actPressed: act && !prev.act);
     prev = out;
@@ -55,7 +62,7 @@ void main() {
       var t = 0, hits = 0;
       while (e.state.phase != MatchPhase.over && t < 600 * 60) {
         e.step([bots[0].input(0, e.state, t), bots[1].input(1, e.state, t + 3)], 1 / 60);
-        hits += e.state.events.where((ev) => const {'bump', 'toss', 'spike', 'drive', 'drop', 'clear', 'smash', 'touche', 'punch', 'counter'}.contains(ev.type)).length;
+        hits += e.state.events.where((ev) => const {'bump', 'toss', 'spike', 'feint', 'vblock', 'drive', 'drop', 'clear', 'smash', 'touche', 'punch', 'counter', 'pull', 'thrust', 'slap'}.contains(ev.type)).length;
         // 途中の状態も、送って受け取ったあと同じ内容になる
         if (t % 97 == 0) {
           final json = jsonEncode(e.state.toJson());
@@ -68,6 +75,33 @@ void main() {
       // ignore: avoid_print
       print('${game.name}: ${e.state.score} 勝者 ${e.state.winner} ${e.state.endReason} ${t ~/ 60}秒 打球 $hits');
     }
+  });
+
+  test('練習: 点は数えず、2人とも練習をおわると、まっさらな本番が始まる', () {
+    final e = MatchEngine(GameKind.volley, firstServer: 0, practice: true);
+    const idle = [PlayerInput.none, PlayerInput.none];
+    expect(e.state.phase, MatchPhase.practice);
+    e.step(const [PlayerInput(actPressed: true), PlayerInput.none], 1 / 60);
+    for (var i = 0; i < 240; i++) {
+      e.step(idle, 1 / 60);
+    }
+    expect(e.state.score, [0, 0]);
+    expect(e.state.phase, MatchPhase.practice);
+    e.skipPractice(0);
+    expect(e.state.phase, MatchPhase.practice);
+    e.skipPractice(1);
+    expect(e.state.phase, MatchPhase.intro);
+    expect(e.state.score, [0, 0]);
+    expect(e.state.server, 0);
+  });
+
+  test('練習は時間が来たら、押さなくても本番へ', () {
+    final e = MatchEngine(GameKind.boxing, practice: true, rule: 30);
+    for (var i = 0; i < (MatchEngine.practiceTime * 60).ceil() + 2; i++) {
+      e.step(const [PlayerInput.none, PlayerInput.none], 1 / 60);
+    }
+    expect(e.state.phase, MatchPhase.intro);
+    expect((e.state.world as BoxingWorld).clock, 30);
   });
 
   test('バレー: サーブが相手コートに落ちるとサーブ側の得点、サーブ権が交代する', () {

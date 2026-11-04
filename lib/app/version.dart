@@ -10,7 +10,8 @@ abstract final class AppVersion {
   /// この版が対応している、あとから足した機能
   /// - rule: 部屋を作るときのルール選択
   /// - swap: 待機中の左右の入れかえ
-  static const features = ['rule', 'swap'];
+  /// - practice: 試合の前の練習
+  static const features = ['rule', 'swap', 'practice'];
 
   /// GitHub のリポジトリ（新しい版のお知らせとダウンロード先）
   static const repo = 'yuuyuu86/PODLE-PC';
