@@ -10,7 +10,7 @@ import '../games/core/catalog.dart';
 
 enum PeerState { idle, host, full, busy }
 
-/// 同じWi-Fiにいる PONG! のPC
+/// 同じWi-Fiにいる PODLE! のPC
 class Peer {
   Peer({
     required this.id,
@@ -68,7 +68,7 @@ class Peer {
 
 enum DiscoveryStatus { starting, ready, failed }
 
-/// 同じWi-Fi（同じネットワーク）の PONG! を見つける。
+/// 同じWi-Fi（同じネットワーク）の PODLE! を見つける。
 /// 1秒ごとに UDP ブロードキャストで「自分はここにいる（名前・状態・部屋コード・TCP の待ち受けポート）」を知らせ、
 /// 届いたお知らせから一覧を作る。サーバーは要らず、Mac と Windows で同じしくみが動く。
 class Discovery extends ChangeNotifier {

@@ -5,7 +5,7 @@ import '../core/common.dart';
 import '../core/painting.dart';
 import '../rally/rally.dart';
 
-/// PONG! バレー: 高いネット、高いジャンプ、ふわっとしたボール。
+/// PODLE! バレー: 高いネット、高いジャンプ、ふわっとしたボール。
 /// 自分のコートで3回まで触れる（レシーブ→トス→スパイク）。
 abstract final class VolleyRules {
   static const netTop = Field.ground - 128;

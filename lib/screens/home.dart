@@ -126,7 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const _NearbyPanel(),
         const SizedBox(height: 18),
         const SizedBox(height: 4),
-        // 「近くの PONG!」と同じ横幅に、2列で並べる（いちばん上の「今日のクエスト」だけ横いっぱい）
+        // 「近くの PODLE!」と同じ横幅に、2列で並べる（いちばん上の「今日のクエスト」だけ横いっぱい）
         LayoutBuilder(builder: (context, c) {
           final half = (c.maxWidth - 10) / 2;
           final now = DateTime.now();
@@ -420,7 +420,7 @@ class UpdateNotice extends StatelessWidget {
   }
 }
 
-/// 右側: 同じWi-Fiにいる PONG! の一覧
+/// 右側: 同じWi-Fiにいる PODLE! の一覧
 class _NearbyPanel extends StatelessWidget {
   const _NearbyPanel();
 
@@ -437,12 +437,12 @@ class _NearbyPanel extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const DoodleHeading('近くの PONG!', size: 20),
+              const DoodleHeading('近くの PODLE!', size: 20),
               const SizedBox(height: 8),
               if (d.status == DiscoveryStatus.failed || model.listenError != null)
                 StatusLine(state: StatusKind.bad, text: '近くのPCを探せません（ポート ${d.udpPort} が使われているか、ファイアウォールで止められています）')
               else if (peers.isEmpty)
-                const StatusLine(state: StatusKind.waiting, text: '同じWi-Fiの PONG! を探しています…')
+                const StatusLine(state: StatusKind.waiting, text: '同じWi-Fiの PODLE! を探しています…')
               else
                 for (final p in peers.take(5))
                   Padding(
@@ -472,7 +472,7 @@ class _NearbyPanel extends StatelessWidget {
   }
 }
 
-/// 近くの PONG! の見つかり具合（●/○/×）
+/// 近くの PODLE! の見つかり具合（●/○/×）
 class NearbyStatus extends StatelessWidget {
   const NearbyStatus({super.key});
 
@@ -490,8 +490,8 @@ class NearbyStatus extends StatelessWidget {
             return StatusLine(state: StatusKind.bad, text: '近くのPCを探せません（ほかのアプリがポート ${d.udpPort} を使っているか、ファイアウォールで止められています）');
           }
           final peers = d.peers;
-          if (peers.isEmpty) return StatusLine(state: StatusKind.waiting, text: '同じWi-Fiの PONG! を探しています…（あなたは「$name」）');
-          return StatusLine(state: StatusKind.ok, text: '同じWi-Fiの PONG!: ${peers.map((p) => p.name).join('、')}（あなたは「$name」）');
+          if (peers.isEmpty) return StatusLine(state: StatusKind.waiting, text: '同じWi-Fiの PODLE! を探しています…（あなたは「$name」）');
+          return StatusLine(state: StatusKind.ok, text: '同じWi-Fiの PODLE!: ${peers.map((p) => p.name).join('、')}（あなたは「$name」）');
         },
       ),
     );

@@ -13,7 +13,7 @@ abstract final class AppVersion {
   static const features = ['rule', 'swap'];
 
   /// GitHub のリポジトリ（新しい版のお知らせとダウンロード先）
-  static const repo = 'yuuyuu86/PONG-PC';
+  static const repo = 'yuuyuu86/PODLE-PC';
   static const releasesPage = 'https://github.com/$repo/releases/latest';
 
   /// '1.2.10' のような版を比べる。a が新しければ正、同じなら 0。読めない部分は 0 とみなす

@@ -26,7 +26,7 @@ class _HowToScreenState extends State<HowToScreen> {
   int _tab = 0;
 
   static const _steps = [
-    '2台のPC（Mac / Windows どちらでも）を同じWi-Fiにつなぎ、両方で PONG! を開きます。サーバーの準備は要りません。',
+    '2台のPC（Mac / Windows どちらでも）を同じWi-Fiにつなぎ、両方で PODLE! を開きます。サーバーの準備は要りません。',
     '遊びたいゲームを選び、片方が「部屋を作る」。部屋を作った人が左、参加した人が右の選手です。',
     'または、画面に出た4文字の部屋コードを伝えて、相手が「コードで参加」。',
     '2人とも「準備OK」を押すと、操作説明のあと試合開始。各自のキーボードで操作します。',
@@ -75,7 +75,7 @@ class _GameRules extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          DoodleHeading('PONG! ${game.title}', size: 21),
+          DoodleHeading('PODLE! ${game.title}', size: 21),
           const SizedBox(height: 8),
           Text(game.summary, style: const TextStyle(fontSize: 17, height: 1.45)),
           const SizedBox(height: 6),
@@ -186,7 +186,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   child: Text.rich(
                                     TextSpan(
                                       children: [
-                                        TextSpan(text: 'PONG! ${AppVersion.app}', style: const TextStyle(fontSize: 21)),
+                                        TextSpan(text: 'PODLE! ${AppVersion.app}', style: const TextStyle(fontSize: 21)),
                                         const TextSpan(
                                           text: '  更新内容を見る ›',
                                           style: TextStyle(fontSize: 15, color: Palette.pencil, decoration: TextDecoration.underline),
@@ -227,7 +227,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           fontSize: 16,
                           seed: 94,
                           onPressed: () =>
-                              showLicensePage(context: context, applicationName: 'PONG!', applicationVersion: AppVersion.app, applicationLegalese: '© 2026 dev.yuta. All rights reserved.'),
+                              showLicensePage(context: context, applicationName: 'PODLE!', applicationVersion: AppVersion.app, applicationLegalese: '© 2026 dev.yuta. All rights reserved.'),
                         ),
                       ),
                     ],
@@ -429,7 +429,7 @@ class _ChangelogState extends State<_Changelog> {
                         key: ValueKey(_sel),
                         shrinkWrap: true,
                         children: [
-                          Text('PONG! ${e.version}', style: const TextStyle(fontSize: 24)),
+                          Text('PODLE! ${e.version}', style: const TextStyle(fontSize: 24)),
                           if (e.date.isNotEmpty) Text(e.date, style: const TextStyle(fontSize: 14, color: Palette.pencil)),
                           for (final t in e.intro) Padding(padding: const EdgeInsets.only(top: 8), child: Text(t, style: const TextStyle(fontSize: 16, height: 1.4))),
                           for (final (title, items) in e.sections) ...[

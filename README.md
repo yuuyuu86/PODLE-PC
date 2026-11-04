@@ -1,10 +1,10 @@
-# PONG! for PC（Mac / Windows）
+# PODLE! for PC（Mac / Windows）
 
 同じ部屋のPC 2台をつないで遊ぶ、白黒落書き風の1対1スポーツゲーム集。
 Flutter で作ったデスクトップアプリで、**Mac（Apple シリコン + Intel のユニバーサル）** と **Windows（x64）** で動きます。
 Mac 同士・Windows 同士・Mac と Windows の組み合わせで対戦できます。
 
-デザインはスマホ版 PONG! と共通です（`lib/ui/doodle.dart`・`lib/ui/widgets.dart`・`lib/avatar/` をスマホ版からそのまま使用）。
+デザインはスマホ版 PODLE! と共通です（`lib/ui/doodle.dart`・`lib/ui/widgets.dart`・`lib/avatar/` をスマホ版からそのまま使用）。
 紙・墨・鉛筆の色、Yusei Magic フォント、手描きの枠と影、●○× の状態表示、着せ替えできる棒人間のアバター、ロゴ。
 
 | タイトル | 特徴 | 勝敗 |
@@ -36,7 +36,7 @@ flutter run -d windows      # Windows で開発用に起動
 配布用のビルド:
 
 ```sh
-./tool/build_macos.sh       # Mac: build/macos/Build/Products/Release/PONG!.app（x86_64 + arm64）
+./tool/build_macos.sh       # Mac: build/macos/Build/Products/Release/PODLE!.app（x86_64 + arm64）
 flutter build windows       # Windows（Windows 上で実行）: build/windows/x64/runner/Release/ のフォルダごと配る
 ```
 
@@ -47,14 +47,14 @@ GitHub に push すると `.github/workflows/build.yml` がテストを走らせ
 
 ### 初回起動時の許可
 
-- **Mac**: 「ローカルネットワーク上のデバイスを検索」の許可を求められたら「許可」。拒否した場合は システム設定 →「プライバシーとセキュリティ」→「ローカルネットワーク」で PONG! をオンに。
+- **Mac**: 「ローカルネットワーク上のデバイスを検索」の許可を求められたら「許可」。拒否した場合は システム設定 →「プライバシーとセキュリティ」→「ローカルネットワーク」で PODLE! をオンに。
   署名なしのビルドを別の Mac にコピーした場合は、初回だけ右クリック →「開く」。
 - **Windows**: 「Windows セキュリティの重要な警告（ファイアウォール）」が出たら、**プライベート ネットワーク**へのアクセスを許可してください。許可しないと相手のPCから見つけてもらえません。
   Wi-Fi のネットワークの種類が「パブリック」になっていると届かないことがあるので、家庭や学校の Wi-Fi は「プライベート」にしておくと確実です。
 
 ## 2台で遊ぶ
 
-1. 2台のPCを**同じWi-Fi**につなぎ、両方で PONG! を開く。
+1. 2台のPCを**同じWi-Fi**につなぎ、両方で PODLE! を開く。
 2. 遊ぶゲームを選び、片方が **部屋を作る**（作った人が左の選手）。
 3. 相手を呼ぶ方法は2つ:
    - **部屋コード**: 画面の4文字のコードを伝え、相手が「コードで参加」に入力する。
@@ -98,7 +98,7 @@ GitHub に push すると `.github/workflows/build.yml` がテストを走らせ
 
 ## 版とアップデート
 
-- 設定画面のいちばん下に、いまの版（例: PONG! 1.1.0）と「新しい版を確かめる」があります。
+- 設定画面のいちばん下に、いまの版（例: PODLE! 1.1.0）と「新しい版を確かめる」があります。
 - 起動時に GitHub Releases の最新版を1回だけ確かめ、新しい版があればホームの右上に「新しい版があります」とダウンロードボタンを出します（「あとで」でその版のお知らせは消えます）。インストールは自動では行わず、ダウンロードページから入れかえます。オフラインのときは何も出ません。
 - 同じWi-Fiに自分より新しい版のPCがあるときも、ホームでお知らせします。
 - **版が違うPCどうし**: 通信のしくみが同じなら、版が違っても遊べます。あとから足した機能（ルール選択・左右の入れかえ）は、部屋を作った人の版が対応しているときだけ使えます。通信のしくみが違う版とは遊べないので、近くのPCや部屋の一覧に「版がちがう（相手の版）」と出し、参加しようとしたときも理由を表示します。
@@ -126,7 +126,7 @@ GitHub に push すると `.github/workflows/build.yml` がテストを走らせ
    - 古い版と**通信できなくなる**変更なら `AppVersion.protocol` を 1 上げる（古い版とは「版がちがう」と表示され、参加できなくなる）。
 3. `CHANGELOG.md` の先頭に「## 1.2.0（日付）」の章を足し、変更を利用者向けの言葉で書く（Releases のパッチノートになります。章がないと配布は止まります）。
 4. 保存データの形を変えたときは `AppSettings.dataVersion` を上げ、`_migrate` に古い形からの読み替えを足す。
-5. コミットして、`git tag v1.2.0 && git push origin v1.2.0`。CI がテストとビルドのあと、タグと `pubspec.yaml` の版が同じかを確かめ、GitHub Releases に `PONG-windows-x64.zip` と `PONG-macos-universal.dmg` を置きます。アプリのお知らせはこの Releases の最新版を見ます。
+5. コミットして、`git tag v1.2.0 && git push origin v1.2.0`。CI がテストとビルドのあと、タグと `pubspec.yaml` の版が同じかを確かめ、GitHub Releases に `PODLE-windows-x64.zip` と `PODLE-macos-universal.dmg` を置きます。アプリのお知らせはこの Releases の最新版を見ます。
 
 ## しくみ
 
@@ -168,7 +168,7 @@ flutter test
 ```
 
 - `game_test.dart`: 4タイトルをボット同士で決着まで（途中の状態の送受信も確認）/ バレーの得点とサーブ交代 / 連打の数え方 / 通信フレームの分割・結合 / 部屋コード
-- `network_test.dart`: 実際の TCP（このPCの中のループバック）でホストとゲストをつなぎ、部屋コード参加（存在しない・満員も）→ 準備完了 → 試合 → 両者の状態が tick ごとに一致 → 入力の反映 → 切断で一時停止 → 自動再接続で同じ状態から再開 → 退出。部屋を閉じたときのゲスト側の終了、待機中の左右の入れかえ、UDP のお知らせで2つの PONG! がお互いを見つけること
+- `network_test.dart`: 実際の TCP（このPCの中のループバック）でホストとゲストをつなぎ、部屋コード参加（存在しない・満員も）→ 準備完了 → 試合 → 両者の状態が tick ごとに一致 → 入力の反映 → 切断で一時停止 → 自動再接続で同じ状態から再開 → 退出。部屋を閉じたときのゲスト側の終了、待機中の左右の入れかえ、UDP のお知らせで2つの PODLE! がお互いを見つけること
 - `widget_test.dart`: 相手が参加すると部屋の画面が更新されること
 - `screenshot_test.dart`（任意）: `SNAPSHOT_DIR=/path/to/dir flutter test test/screenshot_test.dart` で各画面を PNG に書き出します
 

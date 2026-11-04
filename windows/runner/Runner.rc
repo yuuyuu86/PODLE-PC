@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "dev.yuta" "\0"
-            VALUE "FileDescription", "PONG!" "\0"
+            VALUE "FileDescription", "PODLE!" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "pong_pc" "\0"
+            VALUE "InternalName", "podle_pc" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 dev.yuta. All rights reserved." "\0"
-            VALUE "OriginalFilename", "pong_pc.exe" "\0"
-            VALUE "ProductName", "PONG!" "\0"
+            VALUE "OriginalFilename", "podle_pc.exe" "\0"
+            VALUE "ProductName", "PODLE!" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

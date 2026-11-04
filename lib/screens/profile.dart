@@ -145,7 +145,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         maxWidth: 1040,
         children: [
           const Text('ようこそ！', textAlign: TextAlign.center, style: TextStyle(fontSize: 20)),
-          const Text('PONG!', textAlign: TextAlign.center, style: TextStyle(fontSize: 56, height: 1.1, letterSpacing: 4)),
+          const Text('PODLE!', textAlign: TextAlign.center, style: TextStyle(fontSize: 56, height: 1.1, letterSpacing: 4)),
           const SizedBox(height: 24),
           LayoutBuilder(builder: (context, constraints) {
             if (constraints.maxWidth < 760) {

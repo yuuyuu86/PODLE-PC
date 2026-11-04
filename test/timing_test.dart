@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pong_pc/games/boxing/boxing.dart';
-import 'package:pong_pc/games/core/common.dart';
-import 'package:pong_pc/games/fencing/fencing.dart';
-import 'package:pong_pc/games/rally/rally.dart';
-import 'package:pong_pc/games/volley/volley.dart';
+import 'package:podle_pc/games/boxing/boxing.dart';
+import 'package:podle_pc/games/core/common.dart';
+import 'package:podle_pc/games/fencing/fencing.dart';
+import 'package:podle_pc/games/rally/rally.dart';
+import 'package:podle_pc/games/volley/volley.dart';
 
 /// バレーで、選手の打点にボールを置いて振ったときの打球
 GameEvent? hitVolley({required double waitBefore, required double swingBefore}) {

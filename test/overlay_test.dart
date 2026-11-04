@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pong_pc/app/app_model.dart';
-import 'package:pong_pc/app/feedback.dart';
-import 'package:pong_pc/app/settings.dart';
-import 'package:pong_pc/app/updates.dart';
-import 'package:pong_pc/games/core/catalog.dart';
-import 'package:pong_pc/games/core/common.dart';
-import 'package:pong_pc/games/core/match.dart';
-import 'package:pong_pc/main.dart';
-import 'package:pong_pc/net/wire.dart';
+import 'package:podle_pc/app/app_model.dart';
+import 'package:podle_pc/app/feedback.dart';
+import 'package:podle_pc/app/settings.dart';
+import 'package:podle_pc/app/updates.dart';
+import 'package:podle_pc/games/core/catalog.dart';
+import 'package:podle_pc/games/core/common.dart';
+import 'package:podle_pc/games/core/match.dart';
+import 'package:podle_pc/main.dart';
+import 'package:podle_pc/net/wire.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -36,7 +36,7 @@ void main() {
     }
     expect(sawPoint, isTrue);
     expect(e.state.phase, MatchPhase.play);
-    expect(find.text('PONG! バレー'), findsOneWidget, reason: '開始前の説明はプレー中に残らない（上のスコア欄の1つだけ）');
+    expect(find.text('PODLE! バレー'), findsOneWidget, reason: '開始前の説明はプレー中に残らない（上のスコア欄の1つだけ）');
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.textContaining('の得点'), findsNothing, reason: 'プレー再開後');
     // 次の試合（もう一度）

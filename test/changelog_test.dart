@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pong_pc/app/changelog.dart';
-import 'package:pong_pc/app/version.dart';
+import 'package:podle_pc/app/changelog.dart';
+import 'package:podle_pc/app/version.dart';
 
 void main() {
   test('CHANGELOG.md を版ごとに読める（いまの版が先頭）', () {

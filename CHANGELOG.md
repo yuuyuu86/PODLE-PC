@@ -1,6 +1,6 @@
 # パッチノート
 
-PONG! for PC の版ごとの変更です。新しい版は [GitHub Releases](https://github.com/yuuyuu86/PONG-PC/releases) からダウンロードできます。
+PODLE! for PC の版ごとの変更です。新しい版は [GitHub Releases](https://github.com/yuuyuu86/PODLE-PC/releases) からダウンロードできます。
 
 ## 1.1.2（2026-11-02）
 

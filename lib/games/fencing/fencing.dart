@@ -7,7 +7,7 @@ import '../../ui/doodle.dart';
 import '../core/common.dart';
 import '../core/painting.dart';
 
-/// PONG! フェンシング: ピスト上で間合いを測り、突き（J）とパリィ（Space）で読み合う。
+/// PODLE! フェンシング: ピスト上で間合いを測り、突き（J）とパリィ（Space）で読み合う。
 /// 有効な突きで1点。同時の突きは相打ちで得点なし。後ろの端から出ると相手の得点。
 enum FencerState { idle, windup, extend, recover, parry, parryRecover, parried }
 

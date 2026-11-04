@@ -8,7 +8,7 @@ import '../core/common.dart';
 import '../core/painting.dart';
 import '../rally/rally.dart';
 
-/// PONG! バドミントン: 低いネット、速い打ち出しと強い空気抵抗で急に失速するシャトル。
+/// PODLE! バドミントン: 低いネット、速い打ち出しと強い空気抵抗で急に失速するシャトル。
 /// 1人1回で返す。入力方向でクリア / ドロップ、ジャンプ中の高い打点はスマッシュ。
 abstract final class BadmintonRules {
   static const netTop = Field.ground - 82;

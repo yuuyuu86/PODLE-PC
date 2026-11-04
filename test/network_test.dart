@@ -2,15 +2,15 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pong_pc/games/core/catalog.dart';
-import 'package:pong_pc/games/core/common.dart';
-import 'package:pong_pc/games/core/match.dart';
-import 'package:pong_pc/games/fencing/fencing.dart';
-import 'package:pong_pc/net/discovery.dart';
-import 'package:pong_pc/net/link.dart';
-import 'package:pong_pc/net/peer_identity.dart';
-import 'package:pong_pc/net/sessions.dart';
-import 'package:pong_pc/net/wire.dart';
+import 'package:podle_pc/games/core/catalog.dart';
+import 'package:podle_pc/games/core/common.dart';
+import 'package:podle_pc/games/core/match.dart';
+import 'package:podle_pc/games/fencing/fencing.dart';
+import 'package:podle_pc/net/discovery.dart';
+import 'package:podle_pc/net/link.dart';
+import 'package:podle_pc/net/peer_identity.dart';
+import 'package:podle_pc/net/sessions.dart';
+import 'package:podle_pc/net/wire.dart';
 
 class Recorder implements SessionListener {
   final rooms = <RoomInfo>[];
@@ -213,7 +213,7 @@ void main() {
     expect(link, isNull);
   });
 
-  test('UDP のお知らせで、同じPCの2つの PONG! がお互いを見つける', () async {
+  test('UDP のお知らせで、同じPCの2つの PODLE! がお互いを見つける', () async {
     host = HostSession(game: GameKind.volley, me: const Profile('-', ''), listener: Recorder());
     await listen();
     final a = Discovery(udpPort: 47599, interval: const Duration(milliseconds: 200));

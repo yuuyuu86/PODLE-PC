@@ -7,7 +7,7 @@ import '../../ui/doodle.dart';
 import '../core/common.dart';
 import '../core/painting.dart';
 
-/// PONG! ボクシング: 移動・ガード（Space長押し）・パンチ（J）の読み合い。
+/// PODLE! ボクシング: 移動・ガード（Space長押し）・パンチ（J）の読み合い。
 /// 体力0でKO。60秒の制限時間が来たら有効打の多い方が勝ち。
 /// 相手の振りかぶり中に当てるとカウンターで大ダメージ。
 enum BoxerState { idle, windup, active, recover, stagger, blocked }

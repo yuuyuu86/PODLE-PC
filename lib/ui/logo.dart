@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'doodle.dart';
 
-/// PONG! ロゴ。「！」の点はボール。
+/// PODLE! ロゴ。「！」の点はボール。
 /// [flight] を 0→1 に進めると、ボールが [entry]（点からの相対位置）から飛んできて点に着地する。
 class PongLogo extends StatelessWidget {
   const PongLogo({super.key, this.fontSize = 72, this.flight = 1, this.entry});
@@ -18,9 +18,9 @@ class PongLogo extends StatelessWidget {
     final k = fontSize / 72;
     return Semantics(
       header: true,
-      label: 'PONG!',
+      label: 'PODLE!',
       child: SizedBox(
-        width: 360 * k,
+        width: 440 * k,
         height: 120 * k,
         child: CustomPaint(painter: _LogoPainter(fontSize, flight, entry)),
       ),
@@ -42,7 +42,7 @@ class _LogoPainter extends CustomPainter {
     final fs = fontSize;
     final k = fs / 72;
     final text = TextPainter(
-      text: TextSpan(text: 'PONG', style: TextStyle(fontFamily: kFontFamily, fontSize: fs, color: Palette.ink, letterSpacing: 4 * k, height: 1)),
+      text: TextSpan(text: 'PODLE', style: TextStyle(fontFamily: kFontFamily, fontSize: fs, color: Palette.ink, letterSpacing: 4 * k, height: 1)),
       textDirection: TextDirection.ltr,
     )..layout();
     final r = fs * 0.13;

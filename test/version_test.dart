@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pong_pc/app/settings.dart';
-import 'package:pong_pc/app/updates.dart';
-import 'package:pong_pc/app/version.dart';
-import 'package:pong_pc/net/discovery.dart';
+import 'package:podle_pc/app/settings.dart';
+import 'package:podle_pc/app/updates.dart';
+import 'package:podle_pc/app/version.dart';
+import 'package:podle_pc/net/discovery.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> waitUntil(String label, bool Function() cond) async {

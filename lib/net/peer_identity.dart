@@ -16,7 +16,7 @@ class PeerIdentity {
     final privateKey = pair.privateKey as RSAPrivateKey;
     final publicKey = pair.publicKey as RSAPublicKey;
     final csr = X509Utils.generateRsaCsrPem(
-      {'CN': 'PONG! LAN peer'},
+      {'CN': 'PODLE! LAN peer'},
       privateKey,
       publicKey,
     );

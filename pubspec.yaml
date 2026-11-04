@@ -1,5 +1,5 @@
-name: pong_pc
-description: "PONG! — 同じ部屋のPC 2台で遊ぶ、白黒落書き風の1対1スポーツゲーム集（Mac / Windows）"
+name: podle_pc
+description: "PODLE! — 同じ部屋のPC 2台で遊ぶ、白黒落書き風の1対1スポーツゲーム集（Mac / Windows）"
 publish_to: 'none'
 version: 1.1.2+4
 

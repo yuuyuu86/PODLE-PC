@@ -268,7 +268,7 @@ class _MatchHud extends StatelessWidget {
                         children: h.extra != null
                             ? [Text(h.extra!.center, style: const TextStyle(fontSize: 36, height: 1.1)), const Text('有効打の数', style: TextStyle(fontSize: 14))]
                             : [
-                                Text('PONG! ${game.title}', style: const TextStyle(fontSize: 18)),
+                                Text('PODLE! ${game.title}', style: const TextStyle(fontSize: 18)),
                                 Text(game.ruleLabel(model.room?.ruleValue ?? game.defaultRule), style: const TextStyle(fontSize: 14, color: Palette.pencil)),
                               ],
                       ),
@@ -583,7 +583,7 @@ class _Overlays extends StatelessWidget {
     }
     if (h.phase == MatchPhase.intro) {
       return sheet([
-        Text('PONG! ${game.title}', style: const TextStyle(fontSize: 30)),
+        Text('PODLE! ${game.title}', style: const TextStyle(fontSize: 30)),
         const SizedBox(height: 6),
         Text('あなたは${model.you == 0 ? '左' : '右'}の選手（太い線・「あなた」）', style: const TextStyle(fontSize: 17)),
         Text(
@@ -735,7 +735,7 @@ class ResultScreen extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('PONG! ${r.game.title}', style: const TextStyle(fontSize: 20)),
+              Text('PODLE! ${r.game.title}', style: const TextStyle(fontSize: 20)),
               const SizedBox(height: 8),
               Transform.rotate(angle: -0.035, child: Text(title, style: const TextStyle(fontSize: 60, height: 1.2))),
               Row(

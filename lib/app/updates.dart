@@ -75,7 +75,7 @@ class UpdateChecker extends ChangeNotifier {
     final client = HttpClient()..connectionTimeout = const Duration(seconds: 5);
     try {
       final req = await client.getUrl(Uri.parse('https://raw.githubusercontent.com/${AppVersion.repo}/main/update.json'));
-      req.headers.set(HttpHeaders.userAgentHeader, 'PONG-PC/${AppVersion.app}');
+      req.headers.set(HttpHeaders.userAgentHeader, 'PODLE-PC/${AppVersion.app}');
       final res = await req.close().timeout(const Duration(seconds: 8));
       if (res.statusCode != 200) return null;
       final body = jsonDecode(await res.transform(utf8.decoder).join());
@@ -92,7 +92,7 @@ class UpdateChecker extends ChangeNotifier {
     try {
       final req = await client.getUrl(Uri.parse('https://api.github.com/repos/${AppVersion.repo}/releases/latest'));
       req.headers
-        ..set(HttpHeaders.userAgentHeader, 'PONG-PC/${AppVersion.app}')
+        ..set(HttpHeaders.userAgentHeader, 'PODLE-PC/${AppVersion.app}')
         ..set(HttpHeaders.acceptHeader, 'application/vnd.github+json');
       final res = await req.close().timeout(const Duration(seconds: 8));
       if (res.statusCode != 200) return null;

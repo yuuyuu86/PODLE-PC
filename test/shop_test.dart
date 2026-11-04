@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pong_pc/app/quests.dart';
-import 'package:pong_pc/app/records.dart';
-import 'package:pong_pc/app/settings.dart';
-import 'package:pong_pc/avatar/avatar.dart';
-import 'package:pong_pc/games/core/catalog.dart';
+import 'package:podle_pc/app/quests.dart';
+import 'package:podle_pc/app/records.dart';
+import 'package:podle_pc/app/settings.dart';
+import 'package:podle_pc/avatar/avatar.dart';
+import 'package:podle_pc/games/core/catalog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 MatchRecord rec(DateTime at, {bool? won = true, GameKind game = GameKind.volley}) =>

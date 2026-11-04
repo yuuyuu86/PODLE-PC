@@ -29,7 +29,7 @@ Future<void> main() async {
   runApp(PongApp(settings: settings, feedback: feedback, model: model));
 }
 
-/// テーマはスマホ版 PONG! と同じ（紙・墨・手書き文字）
+/// テーマはスマホ版 PODLE! と同じ（紙・墨・手書き文字）
 class PongApp extends StatelessWidget {
   const PongApp({super.key, required this.settings, required this.feedback, required this.model, this.splash = true});
 
@@ -48,7 +48,7 @@ class PongApp extends StatelessWidget {
       feedback: feedback,
       model: model,
       child: MaterialApp(
-        title: 'PONG!',
+        title: 'PODLE!',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,

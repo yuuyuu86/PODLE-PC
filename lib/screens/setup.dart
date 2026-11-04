@@ -88,7 +88,7 @@ class _RuleDialogState extends State<_RuleDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              DoodleHeading('PONG! ${g.title} のルール', size: 22),
+              DoodleHeading('PODLE! ${g.title} のルール', size: 22),
               const SizedBox(height: 14),
               Text(g == GameKind.boxing ? '試合時間' : '何点で勝ち？', style: const TextStyle(fontSize: 18)),
               const SizedBox(height: 8),
@@ -250,7 +250,7 @@ class NearbyRooms extends StatelessWidget {
                   children: [
                     Expanded(
                       child: p.compatible
-                          ? StatusLine(state: StatusKind.ok, text: '${p.name} の部屋　${p.game == null ? '' : 'PONG! ${p.game!.title}'}　コード ${p.code}')
+                          ? StatusLine(state: StatusKind.ok, text: '${p.name} の部屋　${p.game == null ? '' : 'PODLE! ${p.game!.title}'}　コード ${p.code}')
                           : StatusLine(state: StatusKind.bad, text: '${p.name} の部屋（版がちがうため参加できません。相手 ${p.versionLabel} / あなた ${AppVersion.app}）'),
                     ),
                     SizedBox(

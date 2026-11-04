@@ -4,7 +4,7 @@
 set -e
 cd "$(dirname "$0")/.."
 flutter build macos --release "$@"
-APP="build/macos/Build/Products/Release/PONG!.app"
+APP="build/macos/Build/Products/Release/PODLE!.app"
 echo
 echo "できあがり: $APP"
-echo "アーキテクチャ: $(lipo -archs "$APP/Contents/MacOS/PONG!")"
+echo "アーキテクチャ: $(lipo -archs "$APP/Contents/MacOS/PODLE!")"

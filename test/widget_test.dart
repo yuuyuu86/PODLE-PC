@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pong_pc/app/app_model.dart';
-import 'package:pong_pc/app/feedback.dart';
-import 'package:pong_pc/app/settings.dart';
-import 'package:pong_pc/games/core/catalog.dart';
-import 'package:pong_pc/main.dart';
-import 'package:pong_pc/net/wire.dart';
+import 'package:podle_pc/app/app_model.dart';
+import 'package:podle_pc/app/feedback.dart';
+import 'package:podle_pc/app/settings.dart';
+import 'package:podle_pc/games/core/catalog.dart';
+import 'package:podle_pc/main.dart';
+import 'package:podle_pc/net/wire.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

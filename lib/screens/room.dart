@@ -96,7 +96,7 @@ class _RoomScreenState extends State<RoomScreen> {
       ],
     );
     return DoodleScaffold(
-      title: 'PONG! ${r.game.title}（${r.game.ruleLabel(r.ruleValue)}）　${r.you == 0 ? '部屋を作った' : '部屋に参加'}',
+      title: 'PODLE! ${r.game.title}（${r.game.ruleLabel(r.ruleValue)}）　${r.you == 0 ? '部屋を作った' : '部屋に参加'}',
       onBack: _leave,
       child: PageBody(
         maxWidth: 1080,

@@ -292,14 +292,14 @@ class AppModel extends ChangeNotifier implements SessionListener {
 
   /// 相手と通信の版が違うとき
   static String versionText(String theirs) =>
-      '相手の PONG! と版が違うため、いっしょに遊べません（相手 $theirs / あなた ${AppVersion.app}）。2台とも新しい版にそろえてください。';
+      '相手の PODLE! と版が違うため、いっしょに遊べません（相手 $theirs / あなた ${AppVersion.app}）。2台とも新しい版にそろえてください。';
 
   static String refusalText(String reason) => switch (reason) {
         'version' => versionText('ちがう版'),
         'full' => 'この部屋にはすでに2人そろっています。別の部屋を作るか、相手にコードを確認してください。',
         'not_found' => '同じWi-Fiにその部屋が見つかりません。コードが合っているか、2台が同じWi-Fiにつながっているか確認してください。',
         'expired' => '部屋がなくなっていました。もう一度、部屋を作るかコードで参加してください。',
-        'unreachable' => '相手のPCにつながりませんでした。2台が同じWi-Fiにつながっているか、ファイアウォールで PONG! が許可されているか確認してください。',
+        'unreachable' => '相手のPCにつながりませんでした。2台が同じWi-Fiにつながっているか、ファイアウォールで PODLE! が許可されているか確認してください。',
         _ => 'うまくいきませんでした。もう一度お試しください。',
       };
 

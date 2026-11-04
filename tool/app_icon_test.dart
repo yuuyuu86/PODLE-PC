@@ -5,7 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pong_pc/ui/logo.dart';
+import 'package:podle_pc/ui/logo.dart';
 
 Future<Uint8List> render(int px) async {
   final rec = ui.PictureRecorder();

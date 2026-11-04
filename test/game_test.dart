@@ -2,13 +2,13 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pong_pc/games/boxing/boxing.dart';
-import 'package:pong_pc/games/core/catalog.dart';
-import 'package:pong_pc/games/core/common.dart';
-import 'package:pong_pc/games/core/match.dart';
-import 'package:pong_pc/games/fencing/fencing.dart';
-import 'package:pong_pc/games/rally/rally.dart';
-import 'package:pong_pc/net/wire.dart';
+import 'package:podle_pc/games/boxing/boxing.dart';
+import 'package:podle_pc/games/core/catalog.dart';
+import 'package:podle_pc/games/core/common.dart';
+import 'package:podle_pc/games/core/match.dart';
+import 'package:podle_pc/games/fencing/fencing.dart';
+import 'package:podle_pc/games/rally/rally.dart';
+import 'package:podle_pc/net/wire.dart';
 
 /// 簡単なボット。押した瞬間は前のフレームとの差で作る（実際の入力と同じ形）
 class Bot {
