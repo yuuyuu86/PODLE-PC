@@ -1,7 +1,7 @@
 name: podle_pc
 description: "PODLE! — 同じ部屋のPC 2台で遊ぶ、白黒落書き風の1対1スポーツゲーム集（Mac / Windows）"
 publish_to: 'none'
-version: 1.1.2+4
+version: 1.2.0+5
 
 environment:
   sdk: ^3.11.4
